@@ -15,8 +15,8 @@ targets:
       path: Info.plist
       properties:
         CFBundleDisplayName: Vågläsare
-        CFBundleShortVersionString: "26"
-        CFBundleVersion: "26"
+        CFBundleShortVersionString: "27"
+        CFBundleVersion: "27"
         NSCameraUsageDescription: Kameran används för att läsa av vågens display.
         UILaunchScreen: {}
         UIRequiresFullScreen: true
