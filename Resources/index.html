@@ -8,39 +8,60 @@
 <meta name="theme-color" content="#111418">
 <title>Vågläsare – Lock & dosor</title>
 <style>
-:root{--bg:#111418;--card:#1b2027;--line:#2c333d;--txt:#e9edf2;--mut:#8b96a5;--acc:#3ba776;--warn:#e0a63a;--bad:#d9534f;--blue:#4a8fe7}
+:root{--bg:#111418;--card:#1b2027;--card2:#222831;--line:#2c333d;--txt:#e9edf2;--mut:#8b96a5;--acc:#3ba776;--warn:#e0a63a;--bad:#d9534f;--blue:#4a8fe7}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.35 -apple-system,system-ui,sans-serif}
-body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-main{max-width:720px;margin:0 auto;padding:10px}
-h1{font-size:18px;margin:4px 0 10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:10px}
-#camWrap{position:relative;width:100%;background:#000;border-radius:10px;overflow:hidden;touch-action:none}
-#video{display:block;width:100%;height:auto;object-fit:contain;object-position:center top}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+main{max-width:720px;margin:0 auto;padding:10px 10px calc(84px + env(safe-area-inset-bottom))}
+h2{font-size:20px;margin:4px 0 8px;font-weight:600}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:2px 2px 10px}
+.ttl{font-size:18px;font-weight:600}.ver{font-size:12px;font-weight:400;color:var(--mut);background:var(--card);border-radius:6px;padding:2px 6px;margin-left:4px}
+.pane{display:none}.pane.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.lbl{font-size:13px;color:var(--mut);margin:14px 4px 6px}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.seg{display:flex;background:var(--card);border-radius:12px;padding:3px;gap:3px;border:1px solid var(--line)}
+.seg button{flex:1;border:0;background:transparent;color:var(--mut);border-radius:9px;padding:9px 4px;font-size:16px}
+.seg button.on{background:var(--card2);color:var(--txt);font-weight:600;box-shadow:0 0 0 1px var(--line)}
+.seg.small button{font-size:13px;padding:7px 2px}
+.cnt{font-size:14px;font-weight:400;opacity:.85}
+.prog{height:5px;background:var(--card);border-radius:3px;margin:8px 2px 10px;overflow:hidden}#progBar{height:5px;width:0;background:var(--acc);transition:width .3s}
+.camcard{border-radius:14px;overflow:hidden;background:#000}
+#camWrap{position:relative;width:100%;height:min(calc(100vw - 20px),48vh);background:#000;overflow:hidden;touch-action:none}
+#video{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
 #overlay{position:absolute;inset:0;width:100%;height:100%}
-#camHint{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:13px;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none}
+#camHint{position:absolute;left:0;right:0;bottom:44px;text-align:center;font-size:14px;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none}
+.chips{position:absolute;display:flex;gap:6px;z-index:2}.chips.tl{left:8px;top:8px}.chips.tr{right:8px;top:8px}.chips.bl{left:8px;bottom:8px}
+.chip{font-size:12px;color:#fff;background:rgba(0,0,0,.55);border:0;border-radius:12px;padding:5px 9px}
+.chip.on{background:rgba(59,167,118,.85)}
 button,select,input{font:inherit;color:var(--txt)}
-button{background:#2a313b;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+button{background:#2a313b;border:1px solid var(--line);border-radius:12px;padding:11px 12px;cursor:pointer}
 button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
-button.big{font-size:18px;padding:14px}
+button.wide{width:100%}
+button.danger{background:transparent;color:#f08a87;border-color:#6b2f2d}
+button.sm{font-size:13px;padding:6px 10px;flex:0 0 auto}
+button.link{background:none;border:0;color:var(--blue);padding:4px 0}
 button:active{transform:scale(.98)}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.row>*{flex:1 1 auto}
-.reading{display:flex;align-items:center;justify-content:space-between;gap:10px}
-#value{font:700 52px/1 ui-monospace,Menlo,monospace;letter-spacing:1px}
-#status{font-size:14px;padding:4px 10px;border-radius:999px;background:#2a313b;white-space:nowrap}
-#status.stable{background:var(--acc)}#status.wait{background:var(--warn);color:#000}#status.bad{background:var(--bad)}
-.tabs{display:flex;gap:8px}
-.tabs button{flex:1;font-size:17px}
-.tabs button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
-.cnt{display:block;font-size:13px;font-weight:400;opacity:.9}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:1 1 auto}
+.row.two>*{flex:1 1 0}.row.three>*{flex:1 1 0;padding:9px 4px;font-size:14px}
+.sbar{display:flex;align-items:center;gap:10px;margin-top:10px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);transition:background .2s}
+.sbar .sic{font-size:22px;width:24px;text-align:center}.sbar .stx{flex:1;min-width:0}
+#status{font-size:17px;font-weight:600}.ssub{font-size:13px;opacity:.8}
+#value{font:700 30px/1 ui-monospace,Menlo,monospace}
+.sbar.stable{background:#1f3b26;border-color:#2f6b3f;color:#c9f0d3}
+.sbar.wait{background:#3d3115;border-color:#7a5d1d;color:#f5dfae}
+.sbar.bad{background:#451e1d;border-color:#8a3330;color:#ffd0ce}
+#note .nt{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:14px;margin-bottom:10px;border:1px solid}
+#note .nt b{display:block}#note .nt .d{font-size:13px;opacity:.85;margin:2px 0 6px}#note .nt .x{background:none;border:0;padding:0 2px;font-size:18px;color:inherit}
+#note .nt button.a{font-size:13px;padding:5px 11px;border-radius:9px;margin-right:6px}
+#note .ok{background:#1f3b26;border-color:#2f6b3f;color:#c9f0d3}#note .warn{background:#3d3115;border-color:#7a5d1d;color:#f5dfae}#note .bad{background:#451e1d;border-color:#8a3330;color:#ffd0ce}
 label{font-size:14px;color:var(--mut)}
 .set{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.set div{display:flex;flex-direction:column;gap:4px;min-width:0}
-.set input,.set select{width:100%;min-width:0;background:#0e1115;border:1px solid var(--line);border-radius:8px;padding:8px}
+.set div{display:flex;flex-direction:column;gap:4px;min-width:0;justify-content:flex-end}
+.set input,.set select,#manual,#remCard select,#remCard input[type=time]{width:100%;min-width:0;background:#0e1115;border:1px solid var(--line);border-radius:8px;padding:8px}
 input[type=range]{padding:0}
-.switch{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--txt)}
-.switch input{width:22px;height:22px}
+.switch{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--txt);padding:7px 0}
+.switch input{width:22px;height:22px;flex:none;accent-color:var(--acc)}
 #dbg{width:100%;image-rendering:pixelated;border-radius:6px;background:#000;margin-top:8px}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 th,td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:right}
@@ -48,121 +69,213 @@ th:first-child,td:first-child{text-align:left;color:var(--mut);width:48px}
 td input{width:100%;background:transparent;border:0;text-align:right;padding:6px 2px;color:var(--txt)}
 td input:focus{background:#0e1115;outline:1px solid var(--blue)}
 td.cur{outline:2px solid var(--blue);outline-offset:-2px}
-td.dev input{color:#ff6b6b;font-weight:700}
-#tbl{max-height:50vh;overflow:auto}
-.mut{color:var(--mut);font-size:13px}
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+td.dev{background:#451e1d}td.dev input{color:#ffb3b0;font-weight:700}
+#tbl{max-height:45vh;overflow:auto}
+.mut{color:var(--mut);font-size:13px}.redtxt{color:#ff8a85}
+.tag{font-size:12px;padding:3px 8px;border-radius:7px;background:var(--card2);color:var(--mut)}
+.tag.week{background:#3d3115;color:#f5dfae}.tag.egen{background:#1d2f47;color:#b9d6fb}.tag.close{background:#2d2440;color:#d6c9f5}
+.bk{border:1px solid var(--line);background:var(--card);border-radius:14px;padding:11px 13px;margin-bottom:8px;cursor:pointer}
+.bk .t{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:10px 0}
+.stats div{background:var(--card);border-radius:10px;padding:8px 4px;text-align:center}.stats b{display:block;font-size:17px}.stats span{font-size:12px;color:var(--mut)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.grid div{border:1px solid var(--line);border-radius:9px;padding:5px 2px;text-align:center;font-size:14px;font-variant-numeric:tabular-nums}
+.grid small{display:block;font-size:11px;color:var(--mut)}
+.grid .r{background:#451e1d;border-color:#8a3330;color:#ffd0ce}.grid .r small{color:#f0a19d}
+.tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:rgba(17,20,24,.96);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:8}
+.tabbar button{flex:1;background:none;border:0;color:var(--mut);font-size:12px;padding:4px}
+.tabbar button span{display:block;font-size:22px;line-height:1.1}
+.tabbar button.on{color:var(--txt);font-weight:600}
+#toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9;max-width:90vw}
 #toast.show{opacity:1}
 #flash{position:fixed;inset:0;background:var(--acc);opacity:0;pointer-events:none;transition:opacity .35s}
 details summary{cursor:pointer;font-weight:600;padding:4px 0}
 .dlg{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:10;padding:20px}
-.dlg.show{display:flex}
-.dlg .card{max-width:420px;width:100%}
-.bk{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:8px 0}.bk div{flex:1;font-size:14px}
+.dlg.show{display:flex}.dlg .card{max-width:420px;width:100%}
 </style>
 </head>
 <body>
 <main>
-<h1>⚖️ Vågläsare – lock & dosor <span class="mut" style="font-weight:400">version 24</span></h1>
+<header class="top">
+  <div class="ttl">Vågläsare <span class="ver">v25</span></div>
+  <div class="mut" id="expInfo"></div>
+</header>
+<div id="note"></div>
 
-<div class="card">
-  <div id="camWrap">
-    <video id="video" playsinline muted autoplay></video>
-    <canvas id="overlay"></canvas>
-    <div id="camHint">Tryck "Starta kamera"</div>
+<!-- ===================== VÄG ===================== -->
+<section class="pane on" id="paneVag">
+  <div class="seg">
+    <button id="tabDosor" class="on">Dosor <span class="cnt" id="cDosor">0/160</span></button>
+    <button id="tabLock">Lock <span class="cnt" id="cLock">0/160</span></button>
+  </div>
+  <div class="prog"><div id="progBar"></div></div>
+
+  <div class="camcard">
+    <div id="camWrap">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="overlay"></canvas>
+      <div class="chips tl"><span class="chip" id="chipLock" style="display:none">🔒 Skärpa och ljus</span><span class="chip" id="chipZoom" style="display:none"></span></div>
+      <div class="chips tr"><button class="chip" id="chipTorch" style="display:none" aria-label="Ficklampa">💡</button></div>
+      <div class="chips bl"><button class="chip" id="btnFind">⌖ Hitta displayen</button><button class="chip" id="btnRoi">▢ Markera själv</button></div>
+      <div id="camHint">Tryck "Starta kamera"</div>
+    </div>
   </div>
   <div class="row" style="margin-top:8px">
     <button id="btnCam" class="pri">Starta kamera</button>
-    <button id="btnRoi">Markera själv</button>
+    <div id="zoomRow" style="display:none;flex:2"><label>Zoom <span id="vZoom"></span></label><input id="zoom" type="range" style="width:100%"></div>
   </div>
-  <div id="zoomRow" style="display:none;margin-top:8px"><label>Zoom <span id="vZoom"></span></label><input id="zoom" type="range" style="width:100%"></div>
-  <details id="camDet" style="margin-top:8px"><summary>Kamerainställningar</summary>
-    <div id="focusRow" style="display:none;margin-top:8px">
-      <label class="switch"><input type="checkbox" id="focusMan"> Fast fokus (stänger av autofokus)</label>
-      <label>Fokus: nära ↔ långt <span id="vFocus"></span></label><input id="focus" type="range" style="width:100%">
-      <div class="mut" id="focusInfo"></div>
+
+  <div id="sbar" class="sbar">
+    <div class="sic" id="sIcon">•</div>
+    <div class="stx"><div id="status">Ingen kamera</div><div id="statusSub" class="ssub"></div></div>
+    <div id="value">–</div>
+  </div>
+
+  <div class="row two" style="margin-top:10px">
+    <button id="btnSave">💾 Spara</button>
+    <button id="btnUndo">↶ Ångra</button>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <div class="hrow"><b>Alla vikter</b><span class="mut" id="medInfo"></span></div>
+    <div id="tbl"><table><thead><tr><th>Nr</th><th>Dosor (g)</th><th>Lock (g)</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    <div class="row three" style="margin-top:8px">
+      <button id="btnCopyD">⧉ Dosor</button><button id="btnCopyL">⧉ Lock</button><button id="btnCopy">⧉ Båda</button>
     </div>
-    <label class="switch" id="wbRow" style="display:none;margin-top:8px"><input type="checkbox" id="wbLock"> Lås färgbalansen (displayen byter inte färgton)</label>
-    <label class="switch" id="torchRow" style="display:none;margin-top:8px"><input type="checkbox" id="torch"> Ficklampa (kan ge blänk i displayen)</label>
-    <div id="nativeCam" style="display:none;margin-top:8px">
-      <button id="nPoi" class="pri" style="width:100%">Ställ in skärpa och ljus på displayen</button>
+    <button id="btnXlsx" class="wide" style="margin-top:8px">Exportera Excel</button>
+    <div class="row" style="margin-top:8px">
+      <input id="manual" inputmode="decimal" placeholder="Skriv vikt för hand…">
+      <button id="btnManual" style="flex:0 0 auto">Lägg till</button>
+    </div>
+    <div class="mut" style="margin-top:6px">Klistra in: klicka i rad 10 i rätt kolumn (D eller L) i Excel. "Båda" fyller D och L samtidigt. Decimaltecknet ändras under Inställningar.</div>
+  </div>
+</section>
+
+<!-- ===================== BACKUP ===================== -->
+<section class="pane" id="paneBackup">
+  <div id="bkListView">
+    <div class="hrow"><h2>Backup</h2><span class="mut" id="bkCount"></span></div>
+    <div class="mut" style="margin-bottom:10px">Sparas automatiskt var 10:e vikt, innan "Ny vecka", före återställning och när du lämnar appen. De 30 senaste behålls.</div>
+    <button id="bkMake" class="wide">＋ Skapa backup nu</button>
+    <div class="seg small" id="bkFilter" style="margin:10px 0">
+      <button class="on" data-f="all">Alla</button><button data-f="week">Före ny vecka</button><button data-f="egen">Egna</button><button data-f="close">Vid stängning</button>
+    </div>
+    <div id="bkList"></div>
+  </div>
+  <div id="bkDetail" style="display:none">
+    <div class="hrow"><button id="bkBack" class="link">‹ Tillbaka</button><span class="tag" id="bdTag"></span></div>
+    <h2 id="bdTitle" style="margin:4px 0 0"></h2>
+    <div class="mut" id="bdSub" style="margin-bottom:10px"></div>
+    <div class="seg" id="bdSort"><button class="on" data-k="dosor">Dosor</button><button data-k="lock">Lock</button></div>
+    <div class="stats">
+      <div><b id="bdMed">–</b><span>median</span></div><div><b id="bdMin">–</b><span>lägst</span></div>
+      <div><b id="bdMax">–</b><span>högst</span></div><div><b id="bdRed" class="redtxt">–</b><span>avviker</span></div>
+    </div>
+    <div class="row" style="margin-bottom:8px"><button id="bdOnlyRed" class="sm">⚠ Bara avvikande</button><button id="bdOrder" class="sm">⇅ I ordning</button></div>
+    <div class="grid" id="bdGrid"></div>
+    <div class="row two" style="margin-top:10px"><button id="bdCopy">⧉ Kopiera</button><button id="bdXlsx">Excel</button></div>
+    <button id="bdRestore" class="wide" style="margin-top:8px">↺ Återställ den här backupen</button>
+    <button id="bdDelete" class="wide danger" style="margin-top:8px">Radera backupen</button>
+  </div>
+</section>
+
+<!-- ===================== INSTÄLLNINGAR ===================== -->
+<section class="pane" id="paneSet">
+  <h2>Inställningar</h2>
+
+  <div class="lbl">Kamera</div>
+  <div class="card">
+    <div id="nativeCam" style="display:none">
+      <button id="nPoi" class="wide pri">Ställ in skärpa och ljus på displayen</button>
       <div class="mut" style="margin:4px 0 8px">Fokuserar och exponerar på displayen och låser sedan båda. Gör om om du flyttar telefonen.</div>
       <label class="switch"><input type="checkbox" id="nExpLock"> Lås exponeringen</label>
       <label>Ljusstyrka <span id="vBias"></span></label><input id="nBias" type="range" step="0.1" style="width:100%">
       <label class="switch" style="margin-top:6px"><input type="checkbox" id="nFocLock"> Lås fokus</label>
       <label>Fokus: nära ↔ långt <span id="vLens"></span></label><input id="nLens" type="range" min="0" max="1" step="0.01" style="width:100%">
     </div>
-    <div class="mut" style="margin-top:8px" id="camInfo">Ljusstyrkan går inte att styra från Safari, men avläsningen jämför varje punkt med ljuset runt omkring och klarar både ljusa och mörka bilder.</div>
-  </details>
-  <label class="switch" style="margin-top:8px"><input type="checkbox" id="autoFind"> Hitta den gröna displayen automatiskt</label>
-</div>
+    <div id="focusRow" style="display:none">
+      <label class="switch"><input type="checkbox" id="focusMan"> Fast fokus (stänger av autofokus)</label>
+      <label>Fokus: nära ↔ långt <span id="vFocus"></span></label><input id="focus" type="range" style="width:100%">
+      <div class="mut" id="focusInfo"></div>
+    </div>
+    <label class="switch" id="wbRow" style="display:none"><input type="checkbox" id="wbLock"> Lås färgbalansen</label>
+    <label class="switch" id="torchRow" style="display:none"><input type="checkbox" id="torch"> Ficklampa (kan ge blänk i displayen)</label>
+    <label class="switch"><input type="checkbox" id="autoFind"> Hitta den gröna displayen automatiskt</label>
+    <div class="mut" style="margin-top:6px" id="camInfo">Starta kameran för att se vilka inställningar den har.</div>
+  </div>
 
-<div class="card">
-  <div class="reading">
-    <div id="value">–</div>
-    <div id="status">Ingen kamera</div>
-  </div>
-  <div class="tabs" style="margin-top:10px">
-    <button id="tabDosor" class="on">Dosor<span class="cnt" id="cDosor">0/170</span></button>
-    <button id="tabLock">Lock<span class="cnt" id="cLock">0/170</span></button>
-  </div>
-  <div class="row" style="margin-top:10px">
-    <button id="btnSave" class="pri big">Spara vikten</button>
-    <button id="btnUndo" class="big" style="flex:0 0 auto">↶ Ångra</button>
-  </div>
-  <div class="row" style="margin-top:8px">
+  <div class="lbl">Avläsning</div>
+  <div class="card">
     <label class="switch"><input type="checkbox" id="auto" checked> Spara automatiskt när vikten är stabil</label>
+    <div class="set" style="margin-top:8px">
+      <div><label>Stabil i (sekunder)</label><input id="sStable" type="number" min="0.3" max="5" step="0.1"></div>
+      <div><label>Max skillnad för "stabil" (g)</label><input id="sTol" type="number" min="0" step="0.01"></div>
+      <div><label>Markera rött om avvikelse från medianen är över (g)</label><input id="sDev" type="number" min="0" step="0.05"></div>
+      <div><label>Minsta vikt som räknas (g)</label><input id="sMin" type="number" min="0" step="0.1"></div>
+    </div>
   </div>
 
-  <div class="row" style="margin-top:8px">
-    <input id="manual" inputmode="decimal" placeholder="Skriv vikt för hand…" style="background:#0e1115;border:1px solid var(--line);border-radius:10px;padding:10px">
-    <button id="btnManual" style="flex:0 0 auto">Lägg till</button>
+  <div class="lbl">Notiser medan du väger</div>
+  <div class="card">
+    <label class="switch"><input type="checkbox" id="nSaveBeep"> Pling när en vikt sparas</label>
+    <label class="switch"><input type="checkbox" id="nVib"> Vibration vid varning</label>
+    <label class="switch"><input type="checkbox" id="nDev"> Avvikande vikt</label>
+    <label class="switch"><input type="checkbox" id="nDup"> Samma vikt två gånger i rad</label>
+    <label class="switch"><input type="checkbox" id="nLost"> Displayen syns inte (efter 5 s)</label>
+    <label class="switch"><input type="checkbox" id="nDone"> Klar med en sort</label>
   </div>
-</div>
 
-<div class="card">
-  <div class="row">
-    <button id="btnCopyD">Kopiera dosor</button>
-    <button id="btnCopyL">Kopiera lock</button>
+  <div class="lbl">Påminnelser i iPhone</div>
+  <div class="card" id="remCard">
+    <div id="remWeb" class="mut" style="display:none">Påminnelser fungerar bara i iPhone-appen.</div>
+    <div id="remNative">
+      <label class="switch"><input type="checkbox" id="rWeek"> Veckovägning</label>
+      <div class="row" style="margin:4px 0 8px 30px">
+        <select id="rDay"><option value="2">Måndag</option><option value="3">Tisdag</option><option value="4">Onsdag</option><option value="5">Torsdag</option><option value="6">Fredag</option><option value="7">Lördag</option><option value="1">Söndag</option></select>
+        <input id="rTime" type="time" value="08:00">
+      </div>
+      <label class="switch"><input type="checkbox" id="rResign"> Installera om appen (dagen innan den slutar starta)</label>
+      <label class="switch"><input type="checkbox" id="rExcel"> Glöm inte Excel (2 h efter vägning om inget exporterats)</label>
+      <div class="mut" id="remInfo" style="margin-top:6px"></div>
+    </div>
   </div>
-  <div class="row" style="margin-top:8px">
-    <button id="btnCopy">Kopiera båda</button>
-    <button id="btnXlsx" class="pri">Exportera Excel</button>
+
+  <div class="lbl">Vecka</div>
+  <div class="card">
+    <div class="set">
+      <div><label>Antal per sort</label><input id="sTarget" type="number" min="1" max="2000"></div>
+      <div><label>Decimaltecken vid kopiering</label><select id="sSep"><option value=".">Punkt 8.44 (engelsk Excel)</option><option value=",">Komma 8,44 (svensk Excel)</option></select></div>
+    </div>
   </div>
-  <div class="mut" style="margin-top:6px">Dosor eller lock: klicka i rad 10 i rätt kolumn (D eller L) i Excel och klistra in – bara den kolumnen fylls i. "Kopiera båda" fyller D och L samtidigt (klicka i D-kolumnen).<br>Vikterna kopieras som tal med punkt (8.44). Blir de vänsterställda i Excel eller ger MEDEL/AVERAGE #DIV/0!: byt till komma under Inställningar → Decimaltecken.</div>
-  <div id="tbl" style="margin-top:8px"><table><thead><tr><th>Nr</th><th>Dosor (g)</th><th>Lock (g)</th></tr></thead><tbody id="tbody"></tbody></table></div>
-  <div class="row" style="margin-top:8px"><button id="btnClear" style="color:#f08a87">Ny vecka (rensa allt)</button><button id="btnBackup">Återställ backup</button></div>
-</div>
 
-<div class="card">
-  <label class="switch"><input type="checkbox" id="logOn"> Spela in testlogg (för felsökning)</label>
-  <div class="mut" id="logInfo" style="margin:6px 0">Av</div>
-  <div class="row"><button id="btnLog">Exportera logg</button><button id="btnLogClear" style="flex:0 0 auto">Rensa logg</button></div>
-  <div class="mut" style="margin-top:6px">Loggen sparar avläsningar och små bilder av displayen. Ha appen öppen hela tiden medan den spelar in. Exportera när du är klar och skicka filen till Claude.</div>
-</div>
-
-<div class="dlg" id="bkDlg"><div class="card" style="max-height:80vh;overflow:auto"><h3 style="margin:4px 0 8px">Backuper</h3><div id="bkList"></div><div class="row" style="margin-top:10px"><button id="bkClose">Stäng</button></div></div></div>
-
-<div class="card">
-<details id="setDet">
-  <summary>Inställningar & kalibrering</summary>
-  <div class="set" style="margin-top:8px">
-    <div><label>Antal decimaler på vågen</label><input id="sDec" type="number" min="0" max="4"></div>
-    <div><label>Lutning på siffrorna (°)</label><input id="sSlant" type="range" min="-5" max="20" step="1"><span class="mut" id="vSlant"></span></div>
-    <div><label>Stabil i (sekunder)</label><input id="sStable" type="number" min="0.3" max="5" step="0.1"></div>
-    <div><label>Minsta vikt som räknas (g)</label><input id="sMin" type="number" min="0" step="0.1"></div>
-    <div><label>Antal per sort</label><input id="sTarget" type="number" min="1" max="2000"></div>
-    <div><label>Max skillnad för "stabil" (g)</label><input id="sTol" type="number" min="0" step="0.01"></div>
-    <div><label>Markera i rött om vikten avviker mer än (g) från sortens median</label><input id="sDev" type="number" min="0" step="0.05"></div>
-    <div><label>Decimaltecken vid kopiering till Excel</label><select id="sSep"><option value=".">Punkt 8.44 (engelsk Excel)</option><option value=",">Komma 8,44 (svensk Excel)</option></select></div>
-    <div style="justify-content:flex-end"><label class="switch"><input type="checkbox" id="sInv"> Ljusa siffror på mörk bakgrund</label></div>
+  <div class="lbl">Felsökning</div>
+  <div class="card">
+    <label class="switch"><input type="checkbox" id="logOn"> Spela in testlogg</label>
+    <div class="mut" id="logInfo" style="margin:6px 0">Av</div>
+    <div class="row"><button id="btnLog">Exportera logg</button><button id="btnLogClear" style="flex:0 0 auto">Rensa logg</button></div>
+    <details id="setDet" style="margin-top:10px">
+      <summary>Kalibrering</summary>
+      <div class="set" style="margin-top:8px">
+        <div><label>Antal decimaler på vågen</label><input id="sDec" type="number" min="0" max="4"></div>
+        <div><label>Lutning på siffrorna (°) <span class="mut" id="vSlant"></span></label><input id="sSlant" type="range" min="-5" max="20" step="1"></div>
+        <div style="justify-content:flex-end"><label class="switch"><input type="checkbox" id="sInv"> Ljusa siffror på mörk bakgrund</label></div>
+      </div>
+      <div class="mut" style="margin-top:8px">Så här ser appen siffrorna. Grön = segment tänt, röd = släckt.</div>
+      <canvas id="dbg"></canvas>
+      <div class="mut" id="rawRead"></div>
+    </details>
   </div>
-  <div class="mut" style="margin-top:8px">Förhandsvisning: så här ser appen siffrorna. Grön ruta = segment tänt, röd = släckt. Under bilden: hur de 9 varianterna röstade.</div>
-  <canvas id="dbg"></canvas>
-  <div class="mut" id="rawRead"></div>
-</details>
-</div>
+
+  <button id="btnClear" class="wide danger" style="margin:16px 0 8px">Ny vecka (rensa allt)</button>
+  <div class="mut" style="text-align:center;margin-bottom:8px">Vågläsare version 25</div>
+</section>
 </main>
+
+<nav class="tabbar">
+  <button data-p="paneVag" class="on"><span>⚖</span>Väg</button>
+  <button data-p="paneBackup"><span>🗂</span>Backup</button>
+  <button data-p="paneSet"><span>⚙</span>Inställningar</button>
+</nav>
 
 <div id="toast"></div>
 <div id="flash"></div>
@@ -180,7 +293,7 @@ const store = {
 };
 
 // ---------- Inställningar & data ----------
-const S = Object.assign({swapMs:150,platMs:400,chanMode:'luma',perDigit:false,kMode:'rel',edgeFrac:0.05,autoFind:true,roi:null,decimals:2,slant:4,k:0.12,stableSec:1.0,minW:1,target:170,tol:0.02,invert:false,auto:true,dev:0.25,zoom:null,focusMan:false,focusDist:null,wbLock:false,torch:false,copySep:'.'}, store.get('vag_settings7', {}));
+const S = Object.assign({swapMs:150,platMs:400,chanMode:'luma',perDigit:false,kMode:'rel',edgeFrac:0.05,autoFind:true,roi:null,decimals:2,slant:4,k:0.12,stableSec:1.0,minW:1,target:170,tol:0.02,invert:false,auto:true,dev:0.25,zoom:null,focusMan:false,focusDist:null,wbLock:false,torch:false,copySep:'.', nSaveBeep:true, nVib:true, nDev:true, nDup:true, nLost:true, nDone:true, rWeek:false, rDay:6, rTime:'08:00', rResign:true, rExcel:false}, store.get('vag_settings7', {}));
 const newData = () => ({dosor:[], lock:[], mode:'dosor', hist:[]});
 let D = Object.assign(newData(), store.get('vag_data', {}));
 const saveS = () => store.set('vag_settings7', S);
@@ -190,13 +303,13 @@ const saveD = () => store.set('vag_data', D);
 // Sparas automatiskt: före rensning, före återställning och var 10:e ny vikt. Max 20 st (rensnings-backuper behålls längst).
 function getBackups(){ return store.get('vag_backups', []); }
 function makeBackup(reason){
-  const n=D.dosor.length+D.lock.length; if(!n) return;
+  const n=D.dosor.length+D.lock.length; if(!n) return false;
   const b=getBackups(), last=b[b.length-1];
   const snap={t:Date.now(), reason, dosor:D.dosor.slice(), lock:D.lock.slice(), mode:D.mode};
-  if(last && JSON.stringify([last.dosor,last.lock])===JSON.stringify([snap.dosor,snap.lock])) return;
+  if(last && JSON.stringify([last.dosor,last.lock])===JSON.stringify([snap.dosor,snap.lock])) return false;
   b.push(snap);
-  while(b.length>20){ const i=b.findIndex(x=>x.reason==='auto'); b.splice(i>=0?i:0,1); }
-  store.set('vag_backups', b);
+  while(b.length>30){ const i=b.findIndex(x=>x.reason==='auto'||x.reason==='stängning'); b.splice(i>=0?i:0,1); }
+  store.set('vag_backups', b); if($('paneBackup').classList.contains('on')) drawBackups(); return true;
 }
 // Median av en kolumn – används för att markera avvikande vikter (sparas ändå alltid)
 const median = a => { const v=a.filter(x=>x!=null).sort((x,y)=>x-y); return v.length ? v[v.length>>1] : null; };
@@ -204,13 +317,26 @@ const isDev = (v, med) => v!=null && med!=null && Math.abs(v-med) > S.dev + 1e-9
 
 // ---------- UI-hjälp ----------
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove('show'),1800); }
+// Banderoll överst (notis medan man väger). kind: ok | warn | bad. actions: [[text, fn], …]
+function notify(kind, title, text, actions=[], ms=7000){
+  const n=$('note'); const el=document.createElement('div'); el.className='nt '+kind;
+  el.innerHTML=`<div style="flex:1"><b></b><div class="d"></div><div class="acts"></div></div><button class="x" aria-label="Stäng">×</button>`;
+  el.querySelector('b').textContent=title; el.querySelector('.d').textContent=text;
+  for(const [t,fn] of actions){ const b=document.createElement('button'); b.className='a'; b.textContent=t; b.onclick=()=>{ el.remove(); fn&&fn(); }; el.querySelector('.acts').appendChild(b); }
+  el.querySelector('.x').onclick=()=>el.remove();
+  n.innerHTML=''; n.appendChild(el); if(ms) setTimeout(()=>el.remove(), ms);
+  if(kind!=='ok') haptic(kind==='bad'?'error':'warning');
+  return el;
+}
+function haptic(kind){ if(!S.nVib) return; if(NATIVE_EARLY) camMsg2({cmd:'haptic', kind}); else { try{ navigator.vibrate && navigator.vibrate(120); }catch(e){} } }
+const NATIVE_EARLY = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.cam);
+const camMsg2 = m => { try{ window.webkit.messageHandlers.cam.postMessage(m); }catch(e){} };
 function flash(){ const f=$('flash'); f.style.opacity=.35; setTimeout(()=>f.style.opacity=0,120); }
 let actx=null;
 function beep(freq=1200, ms=90){
   try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)();
     const o=actx.createOscillator(), g=actx.createGain(); o.frequency.value=freq; o.connect(g); g.connect(actx.destination);
     g.gain.value=.15; o.start(); o.stop(actx.currentTime+ms/1000); }catch(e){}
-  try{ navigator.vibrate && navigator.vibrate(60); }catch(e){}
 }
 function ask(text){ return new Promise(res=>{ $('dlgText').textContent=text; $('dlg').classList.add('show');
   const done=v=>{ $('dlg').classList.remove('show'); $('dlgYes').onclick=$('dlgNo').onclick=null; res(v); };
@@ -227,6 +353,9 @@ function render(){
   $('cDosor').textContent = `${D.dosor.length}/${S.target}`;
   $('tabLock').classList.toggle('on', D.mode==='lock');
   $('tabDosor').classList.toggle('on', D.mode==='dosor');
+  const k=D.mode, arr=D[k]; $('progBar').style.width=Math.min(100, Math.round(arr.length/S.target*100))+'%';
+  const mm=k==='dosor'?mD:mL; $('medInfo').textContent = mm!=null ? `Median ${k}: ${fmt(mm)} g` : '';
+  const lk=D.hist[D.hist.length-1]; $('statusSub').textContent = lk && D[lk].length ? `Senast: ${lk==='dosor'?'dosa':'lock'} ${D[lk].length} · ${fmt(D[lk][D[lk].length-1])} g` : 'Inget sparat än';
   const n = Math.max(S.target, D.lock.length, D.dosor.length);
   let h = '';
   for(let i=0;i<n;i++){
@@ -269,13 +398,21 @@ function record(v, force, src){
   }
   D[kind].push(v); D.hist.push(kind); lastSaved=v; pend=false; ramp=[]; devAcc=0; lastDevT=null; spikeCnt=0; wplat=null; hidLog=[], pend2=false;
   logEvent('sparad', kind, D[kind].length, v, src||'auto'); logSnap('save', {kind, nr:D[kind].length, val:v, src:src||'auto'});
+  const nr=D[kind].length, prev=D[kind][nr-2];
+  D.changed=Date.now();
   if(isDev(v, med)){ beep(500,180); setTimeout(()=>beep(500,180),260); flash();
-    toast(`⚠️ ${name} ${D[kind].length}: ${fmt(v)} g – avviker (median ${fmt(med)} g). Sparad.`); }
-  else { beep(); flash(); toast(`${name} ${D[kind].length}: ${fmt(v)} g`); }
+    if(S.nDev) notify('bad', `${name} ${nr} avviker`, `${fmt(v)} g – ${fmt(Math.abs(v-med))} g ${v>med?'över':'under'} medianen (${fmt(med)} g). Sparad.`,
+      [['Väg om', ()=>{ $('btnUndo').click(); }], ['Behåll', null]], 12000);
+    else toast(`⚠️ ${name} ${nr}: ${fmt(v)} g – avviker (median ${fmt(med)} g). Sparad.`); }
+  else { if(S.nSaveBeep) beep(); flash(); toast(`${name} ${nr}: ${fmt(v)} g`); }
+  if(S.nDup && src==='auto' && prev!=null && Math.abs(prev-v)<0.005)
+    notify('warn', 'Samma vikt två gånger', `${name} ${nr-1} och ${nr} är båda ${fmt(v)} g. Var det en ny ${kind==='dosor'?'dosa':'lock'}?`,
+      [['Ja, ny', null], ['Ta bort', ()=>{ $('btnUndo').click(); }]], 12000);
   if(kind==='dosor' && D.dosor.length===S.target && D.lock.length<S.target){
-    D.mode='lock'; setTimeout(()=>{ beep(800,250); toast('Alla dosor klara – nu lock!'); },1200);
+    D.mode='lock'; const m=median(D.dosor), nd=D.dosor.filter(x=>isDev(x,m)).length;
+    setTimeout(()=>{ beep(800,250); if(S.nDone) notify('ok', `Alla ${S.target} dosor klara`, `Median ${fmt(m)} g · ${nd} avvikande. Nu väger du lock.`, [['Kopiera dosor', ()=>$('btnCopyD').click()]], 15000); else toast('Alla dosor klara – nu lock!'); },1200);
   } else if(D.lock.length>=S.target && D.dosor.length>=S.target){
-    setTimeout(()=>{ beep(800,400); toast('Klart! Kopiera eller exportera till Excel.'); },1200);
+    setTimeout(()=>{ beep(800,400); if(S.nDone) notify('ok', 'Klart – alla dosor och lock', 'Kopiera eller exportera till Excel.', [['Exportera Excel', ()=>$('btnXlsx').click()], ['Kopiera båda', ()=>$('btnCopy').click()]], 20000); else toast('Klart! Kopiera eller exportera till Excel.'); },1200);
   }
   if((D.dosor.length+D.lock.length)%10===0) makeBackup('auto');
   saveD(); render(); return true;
@@ -287,19 +424,61 @@ $('btnSave').onclick=()=>{ if(cur.val!=null) { record(cur.val, true, 'knapp'); a
 const addManual=()=>{ const v=parseNum($('manual').value); if(v!=null){ record(v, true, 'hand'); $('manual').value=''; } };
 $('btnManual').onclick=addManual;
 $('manual').addEventListener('keydown',e=>{ if(e.key==='Enter') addManual(); });
-$('btnClear').onclick=async()=>{ if(await ask('Rensa alla vikter och börja en ny vecka? En backup sparas först, så du kan få tillbaka dem med "Återställ backup".')){ makeBackup('före rensning'); D=newData(); saveD(); render(); logEvent('rensa'); } };
-function showBackups(){
-  const b=getBackups().slice().reverse(), tf=t=>new Date(t).toLocaleString('sv-SE',{dateStyle:'short',timeStyle:'short'});
-  $('bkList').innerHTML = b.length ? b.map((x,i)=>`<div class="bk"><div><b>${tf(x.t)}</b><br>${x.dosor.length} dosor, ${x.lock.length} lock · ${x.reason}</div><button data-i="${i}">Återställ</button></div>`).join('') : '<div class="mut">Inga backuper än.</div>';
-  $('bkList').querySelectorAll('button').forEach(btn=>btn.onclick=async()=>{
-    const x=b[+btn.dataset.i]; $('bkDlg').classList.remove('show');
-    if(await ask(`Återställa ${x.dosor.length} dosor och ${x.lock.length} lock från ${tf(x.t)}? Det du har nu sparas som en backup först.`)){
-      makeBackup('före återställning'); D=Object.assign(newData(),{dosor:x.dosor.slice(),lock:x.lock.slice(),mode:x.mode||'dosor'}); saveD(); render(); toast('Backup återställd'); logEvent('återställ',tf(x.t)); }
-  });
-  $('bkDlg').classList.add('show');
+$('btnClear').onclick=async()=>{ if(await ask('Rensa alla vikter och börja en ny vecka? En backup sparas först – du hittar den under fliken Backup.')){ makeBackup('före rensning'); D=newData(); saveD(); render(); logEvent('rensa'); showPane('paneVag'); remindSync(); } };
+// ---------- Backup-fliken ----------
+const BKR={auto:['Automatisk',''],'före rensning':['Före ny vecka','week'],egen:['Egen','egen'],'stängning':['När appen stängdes','close'],'före återställning':['Före återställning',''],'före borttag':['Före borttag','']};
+let bkFilter='all', bkOpen=null, bdKind='dosor', bdRed=false, bdSorted=false;
+const tfLong=t=>{ const d=new Date(t), now=new Date(), y=new Date(now-864e5), hm=d.toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
+  if(d.toDateString()===now.toDateString()) return 'Idag '+hm; if(d.toDateString()===y.toDateString()) return 'Igår '+hm;
+  return d.toLocaleDateString('sv-SE',{weekday:'short',day:'numeric',month:'short'})+' '+hm; };
+function drawBackups(){
+  const all=getBackups(), list=all.map((x,i)=>[x,i]).reverse().filter(([x])=>{ const c=(BKR[x.reason]||['',''])[1];
+    return bkFilter==='all' || (bkFilter==='week'&&c==='week') || (bkFilter==='egen'&&c==='egen') || (bkFilter==='close'&&c==='close'); });
+  $('bkCount').textContent=all.length+' st';
+  $('bkList').innerHTML = list.length ? list.map(([x,i])=>{ const r=BKR[x.reason]||[x.reason,''];
+    return `<div class="bk" data-i="${i}"><div class="t"><span>${tfLong(x.t)}</span><span class="tag ${r[1]}">${esc(r[0])}</span></div>
+      <div class="mut">${x.dosor.filter(v=>v!=null).length} dosor · ${x.lock.filter(v=>v!=null).length} lock · vecka ${isoWeek(new Date(x.t))}</div></div>`; }).join('')
+    : '<div class="mut" style="padding:10px 4px">Inga backuper av den här sorten än.</div>';
 }
-$('btnBackup').onclick=showBackups;
-$('bkClose').onclick=()=>$('bkDlg').classList.remove('show');
+$('bkList').onclick=e=>{ const c=e.target.closest('.bk'); if(!c) return; bkOpen=+c.dataset.i; bdRed=false; bdSorted=false; bdKind='dosor'; drawBackupDetail(); };
+function drawBackupDetail(){
+  const x=getBackups()[bkOpen]; if(!x){ $('bkDetail').style.display='none'; $('bkListView').style.display=''; drawBackups(); return; }
+  $('bkListView').style.display='none'; $('bkDetail').style.display='';
+  const r=BKR[x.reason]||[x.reason,'']; $('bdTag').textContent=r[0]; $('bdTag').className='tag '+r[1];
+  $('bdTitle').textContent='Backup '+tfLong(x.t).toLowerCase().replace(/^idag/,'idag').replace(/^igår/,'igår');
+  const nD=x.dosor.filter(v=>v!=null).length, nL=x.lock.filter(v=>v!=null).length;
+  $('bdSub').textContent=`Vecka ${isoWeek(new Date(x.t))} · ${nD} dosor · ${nL} lock`;
+  $('bdSort').querySelectorAll('button').forEach(b=>{ b.classList.toggle('on', b.dataset.k===bdKind); b.textContent=(b.dataset.k==='dosor'?'Dosor ':'Lock ')+(b.dataset.k==='dosor'?nD:nL); });
+  const a=x[bdKind], vals=a.filter(v=>v!=null), m=vals.length>=10?median(vals):null;
+  $('bdMed').textContent=vals.length?fmt(median(vals)):'–'; $('bdMin').textContent=vals.length?fmt(Math.min(...vals)):'–'; $('bdMax').textContent=vals.length?fmt(Math.max(...vals)):'–';
+  let it=a.map((v,i)=>({v,i:i+1,r:isDev(v,m)})).filter(o=>o.v!=null); $('bdRed').textContent=it.filter(o=>o.r).length;
+  if(bdRed) it=it.filter(o=>o.r); if(bdSorted) it=[...it].sort((p,q)=>q.v-p.v);
+  $('bdOnlyRed').classList.toggle('pri', bdRed); $('bdOrder').textContent = bdSorted ? '⇅ Tyngst först' : '⇅ I ordning';
+  const L=bdKind==='dosor'?'D':'L';
+  $('bdGrid').innerHTML = it.length ? it.map(o=>`<div class="${o.r?'r':''}"><small>${L}${o.i}</small>${fmt(o.v)}</div>`).join('') : `<div style="grid-column:1/-1" class="mut">${bdRed?'Inga avvikande vikter':'Inga vikter'}</div>`;
+}
+$('bdSort').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; bdKind=b.dataset.k; drawBackupDetail(); };
+$('bdOnlyRed').onclick=()=>{ bdRed=!bdRed; drawBackupDetail(); };
+$('bdOrder').onclick=()=>{ bdSorted=!bdSorted; drawBackupDetail(); };
+$('bkBack').onclick=()=>{ bkOpen=null; $('bkDetail').style.display='none'; $('bkListView').style.display=''; drawBackups(); };
+$('bkFilter').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; bkFilter=b.dataset.f; $('bkFilter').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); drawBackups(); };
+$('bkMake').onclick=()=>{ if(makeBackup('egen')) toast('Backup sparad'); else toast(D.dosor.length+D.lock.length ? 'Ingen ändring sedan senaste backupen' : 'Inga vikter att spara'); drawBackups(); };
+$('bdCopy').onclick=()=>{ const x=getBackups()[bkOpen]; if(!x) return; const n=Math.max(x.dosor.length,x.lock.length); if(!n) return toast('Inget att kopiera');
+  const lines=[]; for(let i=0;i<n;i++) lines.push(fmtCopy(x.dosor[i])+'\t'+fmtCopy(x.lock[i])); copyText(lines.join('\n'), `Kopierade ${n} rader från backupen`); };
+$('bdXlsx').onclick=()=>{ const x=getBackups()[bkOpen]; if(!x) return; const d=new Date(x.t); exportXlsx(x.dosor, x.lock, d, ' (backup)'); };
+$('bdRestore').onclick=async()=>{ const x=getBackups()[bkOpen]; if(!x) return;
+  if(await ask(`Återställa ${x.dosor.length} dosor och ${x.lock.length} lock från ${tfLong(x.t).toLowerCase()}? Det du har nu sparas som en backup först.`)){
+    makeBackup('före återställning'); D=Object.assign(newData(),{dosor:x.dosor.slice(),lock:x.lock.slice(),mode:x.mode||'dosor'}); saveD(); render();
+    logEvent('återställ',new Date(x.t).toISOString()); toast('Backup återställd'); showPane('paneVag'); } };
+$('bdDelete').onclick=async()=>{ const b=getBackups(), x=b[bkOpen]; if(!x) return;
+  if(await ask(`Radera backupen från ${tfLong(x.t).toLowerCase()}? Det går inte att ångra.`)){ b.splice(bkOpen,1); store.set('vag_backups', b); bkOpen=null; $('bkBack').click(); toast('Backup raderad'); } };
+
+// ---------- Flikar ----------
+function showPane(id){ document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on', p.id===id));
+  document.querySelectorAll('.tabbar button').forEach(b=>b.classList.toggle('on', b.dataset.p===id));
+  if(id==='paneBackup'){ if(bkOpen!=null) drawBackupDetail(); else drawBackups(); }
+  window.scrollTo(0,0); if(typeof syncPreview==='function') setTimeout(syncPreview,0); }
+document.querySelector('.tabbar').onclick=e=>{ const b=e.target.closest('button'); if(b) showPane(b.dataset.p); };
 
 // ---------- Inställningsfält ----------
 function bindSet(){
@@ -309,9 +488,19 @@ function bindSet(){
   $('sInv').checked=S.invert; $('sInv').onchange=()=>{ S.invert=$('sInv').checked; saveS(); };
   $('autoFind').checked=S.autoFind; $('autoFind').onchange=()=>{ S.autoFind=$('autoFind').checked; saveS(); };
   $('auto').checked=S.auto; $('auto').onchange=()=>{ S.auto=$('auto').checked; saveS(); };
+  for(const id of ['nSaveBeep','nVib','nDev','nDup','nLost','nDone']){ $(id).checked=!!S[id]; $(id).onchange=()=>{ S[id]=$(id).checked; saveS(); }; }
+  $('rDay').value=String(S.rDay); $('rTime').value=S.rTime;
+  for(const id of ['rWeek','rResign','rExcel']){ $(id).checked=!!S[id]; $(id).onchange=()=>{ S[id]=$(id).checked; saveS(); remindSync(true); }; }
+  $('rDay').onchange=()=>{ S.rDay=+$('rDay').value; saveS(); remindSync(); }; $('rTime').onchange=()=>{ S.rTime=$('rTime').value||'08:00'; saveS(); remindSync(); };
   showVals();
 }
 function showVals(){ $('vSlant').textContent=S.slant+'°'; }
+function updChips(){ $('chipLock').style.display = (NATIVE && S.nExpLock && S.nFocLock && stream) ? '' : 'none';
+  $('chipZoom').style.display = (stream && S.zoom) ? '' : 'none'; $('chipZoom').textContent = S.zoom ? (Math.round(S.zoom*10)/10).toString().replace('.',',')+'×' : '';
+  $('chipTorch').style.display = (stream && $('torchRow').style.display!=='none') ? '' : 'none'; $('chipTorch').classList.toggle('on', !!S.torch); }
+setInterval(updChips, 700);
+$('chipTorch').onclick=()=>{ const c=$('torch'); c.checked=!c.checked; c.dispatchEvent(new Event('change')); updChips(); };
+$('btnFind').onclick=()=>{ S.autoFind=true; $('autoFind').checked=true; S.roi=null; autoRoi=null; roiPend=null; saveS(); toast('Letar efter displayen…'); };
 
 // ---------- Kamera ----------
 const NATIVE = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.cam);
@@ -320,7 +509,7 @@ let video=$('video'); const ov=$('overlay'), octx=ov.getContext('2d');
 let nCaps=null;
 if(NATIVE){
   // bilderna ritas på en canvas som får samma egenskaper som ett videoelement
-  const c=document.createElement('canvas'); c.id='ncam'; c.style.cssText='display:block;width:100%;height:auto;background:#000';
+  const c=document.createElement('canvas'); c.id='ncam'; c.style.cssText='display:block;width:100%;height:100%;object-fit:cover;background:#000';
   video.replaceWith(c); Object.defineProperty(c,'videoWidth',{get:()=>c.width}); Object.defineProperty(c,'videoHeight',{get:()=>c.height}); c.width=0; c.height=0;
   video=c;
   const nctx=c.getContext('2d'); let decoding=false;
@@ -333,7 +522,7 @@ if(NATIVE){
   };
   // Förhandsbilden visas av iPhone själv (mjuk, 30–60 bilder/s) bakom sidan; canvasen används bara för avläsningen
   const st=document.createElement('style');
-  st.textContent='html,body,main{background:transparent!important} #camWrap{background:transparent!important} #ncam{opacity:0} .card:has(#camWrap){background:transparent!important}';
+  st.textContent='html,body,main{background:transparent!important} #camWrap{background:transparent!important} #ncam{opacity:0} .camcard{background:transparent!important}';
   document.head.appendChild(st);
   window.__nativeCaps=caps=>{ nCaps=caps; setupNativeControls(); };
   window.__nativeInfo=t=>{ toast(t); };
@@ -442,7 +631,7 @@ function setupCamControls(){
   }
   if(!caps.focusDistance && !caps.torch && !(caps.whiteBalanceMode||[]).includes('manual')) $('camInfo').textContent='Den här kameran låter inte webbsidor ändra fokus, färgbalans eller ficklampa. '+$('camInfo').textContent;
 }
-function stopCam(){ octx.clearRect(0,0,ov.width,ov.height); lastDigits=[]; if(NATIVE){ camMsg({cmd:'stop'}); camMsg({cmd:'preview', show:false}); pvLast='off'; stream=null; } if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } video.srcObject=null; $('btnCam').textContent='Starta kamera'; $('btnCam').classList.add('pri'); setStatus('Ingen kamera',''); try{ wakeLock&&wakeLock.release(); }catch(e){} }
+function stopCam(){ if(lostNote){ lostNote.remove(); lostNote=null; } lastOk=0; octx.clearRect(0,0,ov.width,ov.height); lastDigits=[]; if(NATIVE){ camMsg({cmd:'stop'}); camMsg({cmd:'preview', show:false}); pvLast='off'; stream=null; } if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } video.srcObject=null; $('btnCam').textContent='Starta kamera'; $('btnCam').classList.add('pri'); setStatus('Ingen kamera',''); try{ wakeLock&&wakeLock.release(); }catch(e){} }
 $('btnCam').onclick=()=> stream ? stopCam() : startCam();
 document.addEventListener('visibilitychange', async()=>{ if(document.visibilityState==='visible' && stream && 'wakeLock' in navigator){ try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} } });
 
@@ -450,8 +639,8 @@ document.addEventListener('visibilitychange', async()=>{ if(document.visibilityS
 let roiMode=false, drag=null;
 $('btnRoi').onclick=()=>{ if(!stream){ toast('Starta kameran först'); return; } roiMode=true; $('camHint').textContent='Dra en ruta runt hela den gröna displayen – ta med lite marginal'; $('btnRoi').classList.add('pri'); };
 // var på skärmen själva videobilden hamnar (video skalas med "contain")
-function vrect(){ const cw=ov.clientWidth, ch=ov.clientHeight, vw=video.videoWidth||cw, vh=video.videoHeight||ch, sc=Math.min(cw/vw, ch/vh);
-  return {ox:(cw-vw*sc)/2, oy:0, w:vw*sc, h:vh*sc}; }
+function vrect(){ const cw=ov.clientWidth, ch=ov.clientHeight, vw=video.videoWidth||cw, vh=video.videoHeight||ch, sc=Math.max(cw/vw, ch/vh);   // kamerarutan visar mitten av bilden (fyller rutan)
+  return {ox:(cw-vw*sc)/2, oy:(ch-vh*sc)/2, w:vw*sc, h:vh*sc}; }
 function pt(e){ const r=ov.getBoundingClientRect(), v=vrect(); return {x:Math.min(1,Math.max(0,(e.clientX-r.left-v.ox)/v.w)), y:Math.min(1,Math.max(0,(e.clientY-r.top-v.oy)/v.h))}; }
 ov.addEventListener('pointerdown',e=>{ if(!roiMode) return; e.preventDefault(); ov.setPointerCapture(e.pointerId); drag={a:pt(e),b:pt(e)}; });
 ov.addEventListener('pointermove',e=>{ if(drag){ e.preventDefault(); drag.b=pt(e); } });
@@ -674,7 +863,7 @@ function decode(chars){
 // avläsningar senaste sekunden ligger inom ±tolerans. Under minsta vikt => redo för nästa.
 let readEvery=110, procMs=20, smallSince=null;
 let hist=[], armed=true, cur={val:null}, lastT=0, lastOk=0, smallCnt=0, redo=false, lastSaved=null, refStable=null, plat=null, hidStart=null, pend=false, ramp=[], devAcc=0, lastDevT=null, spikeCnt=0, wplat=null, spikeT=-1e9, rec=[], settle=null, creepSince=null, hidLog=[], pend2=false;
-function setStatus(t,c){ const s=$('status'); s.textContent=t; s.className=c||''; }
+function setStatus(t,c){ $('status').textContent=t; $('sbar').className='sbar '+(c||''); $('sIcon').textContent = c==='stable' ? '✓' : c==='wait' ? '…' : c==='bad' ? '!' : '•'; }
 function step(r, now){
   if(!r || !r.ok){
     if(settle && settle.lastHid!=null) settle.hid+=Math.min(200, now-settle.lastHid); if(settle) settle.lastHid=now;
@@ -769,11 +958,14 @@ function step(r, now){
   const status = small ? ['Lägg på nästa',''] : redo ? ['Gör om – lyft av och lägg på igen','bad'] : newWeight ? ['Ny vikt – sparar strax…','wait'] : stable ? [armed?(creeping?'Väntar in vikten…':'Stabil'):'Sparad – lyft av','stable'] : ['Väntar…','wait'];
   return {disp: r.blank ? '–' : fmt(r.val), status, saved};
 }
+let lostNote=null;
 function handleReading(r, now){
   const res=step(r, now);
   if(LOG.on) logFrame(r, res, now);
   if(!res) return;
   $('value').textContent=res.disp;
+  if(lastOk && now-lastOk>5000){ if(S.nLost && !lostNote){ lostNote=notify('warn','Displayen syns inte','Flytta handen eller tryck Hitta displayen.',[['Hitta displayen',()=>$('btnFind').click()]],0); } }
+  else if(lostNote && now-lastOk<500){ lostNote.remove(); lostNote=null; }
   if(res.saved!=null && !record(res.saved, false, 'auto') && redo) res.status=['Gör om – lyft av och lägg på igen','bad'];
   setStatus(...res.status);
 }
@@ -861,10 +1053,11 @@ function buildXlsx(dosor, lock, sheetName, dateStr){
 function isoWeek(d){ const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const day=t.getUTCDay()||7; t.setUTCDate(t.getUTCDate()+4-day); const y=new Date(Date.UTC(t.getUTCFullYear(),0,1)); return Math.ceil(((t-y)/864e5+1)/7); }
 /*XLSX-END*/
 
-$('btnXlsx').onclick=async()=>{
-  const d=new Date(), ds=d.toISOString().slice(0,10), wk=isoWeek(d);
-  const blob=buildXlsx(D.dosor, D.lock, 'Vecka '+wk, ds);
-  const fname=`Dosor och lock v${wk} ${ds}.xlsx`;
+$('btnXlsx').onclick=()=>{ exportXlsx(D.dosor, D.lock, new Date(), ''); D.exported=Date.now(); saveD(); remindSync(); };
+async function exportXlsx(dosor, lock, d, extra){
+  const ds=d.toISOString().slice(0,10), wk=isoWeek(d);
+  const blob=buildXlsx(dosor, lock, 'Vecka '+wk, ds);
+  const fname=`Dosor och lock v${wk} ${ds}${extra}.xlsx`;
   const file=new File([blob], fname, {type:blob.type});
   if(NATIVE){ shareNative(blob, fname); return; }
   try{ if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:fname}); return; } }
@@ -923,7 +1116,7 @@ $('btnLogClear').onclick=async()=>{ if(await ask('Rensa testloggen?')){ Object.a
 $('btnLog').onclick=async()=>{
   if(!LOG.frames.length && !LOG.events.length){ toast('Loggen är tom – slå på "Spela in testlogg" först'); return; }
   let cam=null; try{ const tr=stream&&stream.getVideoTracks()[0]; if(tr) cam={settings:tr.getSettings(), caps:tr.getCapabilities?tr.getCapabilities():null}; }catch(e){}
-  const out={app:'vagavlasare', version:24, started:new Date(LOG.wall).toISOString(), exported:new Date().toISOString(), meta:LOG.meta, cam,
+  const out={app:'vagavlasare', version:25, started:new Date(LOG.wall).toISOString(), exported:new Date().toISOString(), meta:LOG.meta, cam,
     video:[video.videoWidth,video.videoHeight], settings:S, data:{dosor:D.dosor, lock:D.lock},
     framesFormat:['ms','värde','rå','status','roi'], frames:LOG.frames, events:LOG.events, snaps:LOG.snaps};
   const blob=new Blob([JSON.stringify(out)],{type:'application/json'});
@@ -936,7 +1129,30 @@ $('btnLog').onclick=async()=>{
 };
 window.addEventListener('beforeunload', e=>{ if(LOG.on && LOG.frames.length){ e.preventDefault(); e.returnValue=''; } });
 
-bindSet(); render();
+// ---------- Påminnelser i iPhone (bara i appen) ----------
+let appExpires=null;
+function remindSync(ask){
+  if(!NATIVE) return;
+  const [h,mi]=(S.rTime||'08:00').split(':').map(Number);
+  const pendingExcel = !!(S.rExcel && D.changed && (!D.exported || D.exported<D.changed) && (D.dosor.length+D.lock.length)>0);
+  camMsg({cmd:'remind', ask:!!ask, week:{on:!!S.rWeek, weekday:S.rDay, hour:h, minute:mi, n:S.target},
+          resign:!!S.rResign, excel:pendingExcel});
+}
+window.__nativeApp=info=>{   // från appen: när signeringen går ut
+  if(info && info.expires){ appExpires=info.expires; const d=new Date(info.expires), left=(info.expires-Date.now())/864e5;
+    $('expInfo').textContent = 'Fungerar till '+d.toLocaleDateString('sv-SE',{weekday:'short',day:'numeric',month:'short'});
+    $('remInfo').textContent = 'Appen slutar starta '+d.toLocaleString('sv-SE',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+'. Installera om med Sideloadly innan dess – vikterna ligger kvar.';
+    if(left<1.5) notify(left<0.5?'bad':'warn', left<0 ? 'Appen behöver installeras om' : 'Installera om appen snart', 'Kör Sideloadly igen – vikterna ligger kvar.', [], 15000); }
+  if(info && info.denied) notify('warn','Notiser är avstängda','Slå på dem under Inställningar → Vågläsare → Notiser i iPhone.',[],12000);
+};
+if(!NATIVE){ $('remWeb').style.display=''; $('remNative').style.display='none'; }
+// Backup när man lämnar appen (hemskärm, annan app, låst skärm)
+function onLeave(){ makeBackup('stängning'); remindSync(); }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') onLeave(); });
+window.addEventListener('pagehide', onLeave);
+window.__onBackground = onLeave;
+
+bindSet(); render(); remindSync();
 </script>
 </body>
 </html>

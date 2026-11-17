@@ -1,11 +1,12 @@
 import UIKit
 import WebKit
 import AVFoundation
+import UserNotifications
 
 /// Visar vågläsarens webbsida (Resources/index.html) och kopplar den till iPhone-kameran.
 /// Webbsidan sköter avläsning, sparning och tabell – exakt samma kod som webbversionen.
 /// Appen sköter kameran (låst exponering, fokus, färgbalans, zoom, ficklampa), kopiering och delning.
-final class ViewController: UIViewController, WKScriptMessageHandler {
+final class ViewController: UIViewController, WKScriptMessageHandler, WKNavigationDelegate {
     private var webView: WKWebView!
     private let camera = Camera()
     private let previewView = UIView()
@@ -39,11 +40,16 @@ final class ViewController: UIViewController, WKScriptMessageHandler {
         previewView.layer.cornerRadius = 10
         previewView.isHidden = true
         previewLayer = AVCaptureVideoPreviewLayer(session: camera.session)
-        previewLayer.videoGravity = .resizeAspect
+        previewLayer.videoGravity = .resizeAspectFill   // samma beskärning som sidans kameraruta
         previewView.layer.addSublayer(previewLayer)
         view.addSubview(previewView)
         view.addSubview(webView)
+        webView.navigationDelegate = self
         webView.load(URLRequest(url: URL(string: "app://local/index.html")!))
+        // Backup när man lämnar appen (hemskärm, annan app, låst skärm)
+        NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.webView.evaluateJavaScript("window.__onBackground&&window.__onBackground()", completionHandler: nil)
+        }
 
         camera.onFrame = { [weak self] b64, w, h in
             DispatchQueue.main.async {
@@ -64,6 +70,82 @@ final class ViewController: UIViewController, WKScriptMessageHandler {
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+
+    // Sidan har laddats: berätta när appens signering går ut (gratis Apple-ID = 7 dagar)
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        if let exp = Self.provisionExpiry() {
+            let ms = Int(exp.timeIntervalSince1970 * 1000)
+            webView.evaluateJavaScript("window.__nativeApp&&window.__nativeApp({expires:\(ms)})", completionHandler: nil)
+        }
+    }
+
+    /// Läser utgångsdatumet ur embedded.mobileprovision (finns när appen är installerad med Sideloadly)
+    static func provisionExpiry() -> Date? {
+        guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
+              let data = try? Data(contentsOf: url),
+              let text = String(data: data, encoding: .isoLatin1),
+              let start = text.range(of: "<?xml"), let end = text.range(of: "</plist>") else { return nil }
+        let xml = String(text[start.lowerBound..<end.upperBound])
+        guard let plist = try? PropertyListSerialization.propertyList(from: Data(xml.utf8), options: [], format: nil) as? [String: Any] else { return nil }
+        return plist["ExpirationDate"] as? Date
+    }
+
+    // MARK: Påminnelser (lokala notiser – kräver inget betalt utvecklarkonto)
+    private func remind(_ m: [String: Any]) {
+        let center = UNUserNotificationCenter.current()
+        let week = m["week"] as? [String: Any] ?? [:]
+        let wantWeek = bool(week["on"]), wantResign = bool(m["resign"]), wantExcel = bool(m["excel"])
+        let schedule = {
+            center.removePendingNotificationRequests(withIdentifiers: ["vecka", "omsignera", "omsignera2", "excel"])
+            if wantWeek {
+                var dc = DateComponents()
+                dc.weekday = Int(self.num(week["weekday"], 6)); dc.hour = Int(self.num(week["hour"], 8)); dc.minute = Int(self.num(week["minute"], 0))
+                let n = Int(self.num(week["n"], 160))
+                self.add(center, "vecka", "Dags att väga", "\(n) dosor och \(n) lock den här veckan.", UNCalendarNotificationTrigger(dateMatching: dc, repeats: true))
+            }
+            if wantResign, let exp = Self.provisionExpiry() {
+                let dayBefore = exp.addingTimeInterval(-24 * 3600)
+                var dc = Calendar.current.dateComponents([.year, .month, .day], from: dayBefore); dc.hour = 18; dc.minute = 0
+                if let when = Calendar.current.date(from: dc), when > Date() {
+                    self.add(center, "omsignera", "Installera om i morgon", "Appen slutar starta i morgon. Kör Sideloadly igen – vikterna ligger kvar.", UNCalendarNotificationTrigger(dateMatching: dc, repeats: false))
+                }
+                let morning = exp.addingTimeInterval(-3 * 3600)
+                if morning > Date() {
+                    self.add(center, "omsignera2", "Appen slutar starta snart", "Installera om med Sideloadly idag.", UNTimeIntervalNotificationTrigger(timeInterval: morning.timeIntervalSinceNow, repeats: false))
+                }
+            }
+            if wantExcel {
+                self.add(center, "excel", "Glöm inte Excel", "Vikterna från vägningen är inte exporterade än.", UNTimeIntervalNotificationTrigger(timeInterval: 2 * 3600, repeats: false))
+            }
+        }
+        if !(wantWeek || wantResign || wantExcel) { schedule(); return }
+        center.getNotificationSettings { st in
+            if st.authorizationStatus == .notDetermined {
+                center.requestAuthorization(options: [.alert, .sound, .badge]) { ok, _ in
+                    if ok { schedule() } else { self.tellDenied() }
+                }
+            } else if st.authorizationStatus == .denied {
+                if self.bool(m["ask"]) { self.tellDenied() }
+            } else { schedule() }
+        }
+    }
+
+    private func add(_ c: UNUserNotificationCenter, _ id: String, _ title: String, _ body: String, _ trigger: UNNotificationTrigger) {
+        let content = UNMutableNotificationContent()
+        content.title = title; content.body = body; content.sound = .default
+        c.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
+    }
+
+    private func tellDenied() {
+        DispatchQueue.main.async {
+            self.webView.evaluateJavaScript("window.__nativeApp&&window.__nativeApp({denied:true})", completionHandler: nil)
+        }
+    }
+
+    private func haptic(_ kind: String) {
+        let g = UINotificationFeedbackGenerator()
+        g.notificationOccurred(kind == "error" ? .error : kind == "success" ? .success : .warning)
+    }
 
     private static let storePrefix = "vagavlasare.store."
     private static func savedStoreJSON() -> String {
@@ -95,6 +177,8 @@ final class ViewController: UIViewController, WKScriptMessageHandler {
         case "store":
             if let k = m["key"] as? String, let v = m["value"] as? String { UserDefaults.standard.set(v, forKey: Self.storePrefix + k) }
         case "preview":   placePreview(m)
+        case "remind":    remind(m)
+        case "haptic":    haptic((m["kind"] as? String) ?? "warning")
         case "copy":      UIPasteboard.general.string = (m["text"] as? String) ?? ""
         case "share":     share(name: (m["name"] as? String) ?? "fil", base64: (m["b64"] as? String) ?? "")
         default: break
