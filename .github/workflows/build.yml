@@ -1,0 +1,50 @@
+name: Bygg IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installera XcodeGen
+        run: brew install xcodegen
+
+      - name: Skapa Xcode-projekt
+        run: xcodegen generate
+
+      - name: Bygg appen (osignerad)
+        run: |
+          set -o pipefail
+          xcodebuild -project Vaglasare.xcodeproj -target Vaglasare -configuration Release \
+            -sdk iphoneos SYMROOT="$PWD/build" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee build.log | grep -E "error:|warning: .*Swift|BUILD (SUCCEEDED|FAILED)" || true
+          test -d build/Release-iphoneos/Vaglasare.app || (tail -n 120 build.log; exit 1)
+
+      - name: Packa IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Release-iphoneos/Vaglasare.app Payload/
+          zip -qry Vaglasare.ipa Payload
+          ls -la Vaglasare.ipa
+
+      - name: Ladda upp som bygg-fil
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vaglasare-ipa
+          path: Vaglasare.ipa
+
+      - name: Lägg ut som release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: bygge-${{ github.run_number }}
+          name: Vågläsare – bygge ${{ github.run_number }}
+          files: Vaglasare.ipa
