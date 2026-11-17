@@ -63,7 +63,7 @@ details summary{cursor:pointer;font-weight:600;padding:4px 0}
 </head>
 <body>
 <main>
-<h1>⚖️ Vågläsare – lock & dosor <span class="mut" style="font-weight:400">version 23</span></h1>
+<h1>⚖️ Vågläsare – lock & dosor <span class="mut" style="font-weight:400">version 24</span></h1>
 
 <div class="card">
   <div id="camWrap">
@@ -250,6 +250,12 @@ $('tbody').addEventListener('change', e=>{
   saveD(); render();
 });
 
+function lastSavedNow(){ const k=D.hist[D.hist.length-1]; return k&&D[k].length ? D[k][D[k].length-1] : lastSaved; }
+function adjustLast(v){   // vågen kröp vidare efter sparningen: rätta senaste värdet (samma dosa/lock)
+  const kind=D.hist[D.hist.length-1]; if(!kind || !D[kind].length) return;
+  const i=D[kind].length-1, old=D[kind][i]; D[kind][i]=v;   // lastSaved behålls: bytesreglerna jämför med vikten som först sparades
+  logEvent('justerad', kind, i+1, old, v); saveD(); render(); toast(`${kind==='dosor'?'Dosa':'Lock'} ${i+1}: justerad till ${fmt(v)} g`);
+}
 function record(v, force, src){
   if(v==null) return false;
   const kind = D.mode, name = kind==='dosor' ? 'Dosa' : 'Lock';
@@ -261,7 +267,7 @@ function record(v, force, src){
     logEvent('avvisad', kind, v, med); logSnap('fail',{raw:'avvisad', val:v});
     return false;
   }
-  D[kind].push(v); D.hist.push(kind); lastSaved=v; pend=false; ramp=[]; devAcc=0; lastDevT=null; spikeCnt=0; wplat=null;
+  D[kind].push(v); D.hist.push(kind); lastSaved=v; pend=false; ramp=[]; devAcc=0; lastDevT=null; spikeCnt=0; wplat=null; hidLog=[], pend2=false;
   logEvent('sparad', kind, D[kind].length, v, src||'auto'); logSnap('save', {kind, nr:D[kind].length, val:v, src:src||'auto'});
   if(isDev(v, med)){ beep(500,180); setTimeout(()=>beep(500,180),260); flash();
     toast(`⚠️ ${name} ${D[kind].length}: ${fmt(v)} g – avviker (median ${fmt(med)} g). Sparad.`); }
@@ -667,17 +673,22 @@ function decode(chars){
 // Oläsbara bilder hoppas över (nollställer inget). Vikten räknas som stabil när alla
 // avläsningar senaste sekunden ligger inom ±tolerans. Under minsta vikt => redo för nästa.
 let readEvery=110, procMs=20, smallSince=null;
-let hist=[], armed=true, cur={val:null}, lastT=0, lastOk=0, smallCnt=0, redo=false, lastSaved=null, refStable=null, plat=null, hidStart=null, pend=false, ramp=[], devAcc=0, lastDevT=null, spikeCnt=0, wplat=null, spikeT=-1e9;
+let hist=[], armed=true, cur={val:null}, lastT=0, lastOk=0, smallCnt=0, redo=false, lastSaved=null, refStable=null, plat=null, hidStart=null, pend=false, ramp=[], devAcc=0, lastDevT=null, spikeCnt=0, wplat=null, spikeT=-1e9, rec=[], settle=null, creepSince=null, hidLog=[], pend2=false;
 function setStatus(t,c){ const s=$('status'); s.textContent=t; s.className=c||''; }
 function step(r, now){
   if(!r || !r.ok){
+    if(settle && settle.lastHid!=null) settle.hid+=Math.min(200, now-settle.lastHid); if(settle) settle.lastHid=now;
     if(hidStart==null) hidStart=now;   // displayen skymd/oläsbar (t.ex. handen i vägen vid byte)
     if(now-lastOk>1500){ hist=[]; cur.val=null; return {disp:r?'?':'–', status: r ? [lastClip?'Kan inte läsa – bilden är överexponerad: zooma in på displayen':'Kan inte läsa','bad'] : [S.autoFind?'Hittar inte displayen':'Markera displayen','wait']}; }
     return null; // tillfälligt oläsbar – behåll senaste läge
   }
-  lastOk=now;
+  lastOk=now; if(settle) settle.lastHid=null;
   // Var displayen skymd minst 0,6 s? Då kan ett byte ha skett bakom handen.
-  if(hidStart!=null){ if(now-hidStart>=600 && !armed && lastSaved!=null) pend=true; hidStart=null; }
+  if(hidStart!=null){ hidLog.push([hidStart,now]); if(now-hidStart>=600 && !armed && lastSaved!=null) pend=true; hidStart=null; }
+  // Rörig display (orimligt hög avläsning, t.ex. två lock eller handen på vågen) räknas som skymd
+  if(lastSaved!=null && r.val>1.5*Math.abs(lastSaved)+0.5) hidLog.push([now-50,now]);
+  hidLog=hidLog.filter(h=>now-h[1]<=(S.hidWin??2000));
+  if(S.hidSum!==false && !armed && lastSaved!=null && hidLog.reduce((a,h)=>a+(h[1]-h[0]),0)>=(S.hidSumMs??500)){ pend2=true; hidLog=[]; }
   hist.push({t:now,v:r.val}); hist=hist.filter(h=>now-h.t<=S.stableSec*1000+150);
   const span=now-hist[0].t, vals=hist.map(h=>h.v), lo=Math.min(...vals), hi=Math.max(...vals);
   const stable = span>=S.stableSec*900 && hist.length>=3 && hi-lo<=S.tol+1e-9;
@@ -686,7 +697,9 @@ function step(r, now){
   if(stable && !small) refStable=r.val;
   // Första stabila vikten efter att displayen varit skymd: annan vikt än senast sparade (≥0,01 g) = nytt lock/dosa
   if(pend && stable && !small){ if(Math.abs(r.val-lastSaved) >= 0.01-1e-9){ armed=true; redo=false; } pend=false; }
-  if(small) pend=false;
+  // Skymd/rörig i sammanlagt ≥0,5 s och sedan en tydligt annan vikt (≥0,03 g) = byte bakom handen
+  if(pend2 && stable && !small){ if(Math.abs(r.val-(settle?settle.cur:lastSavedNow())) >= (S.hidSumDelta??0.03)-1e-9){ armed=true; redo=false; } pend2=false; }
+  if(small) pend=false, pend2=false;
   // "Tom våg" räknas inte om den bara är decimalerna av vikten som ligger på (8,44 felläst som 0,44)
   const fakeZero = small && r.val>=0.2 && refStable!=null && Math.abs(Math.round((refStable%1)*100)/100 - r.val) < 0.015;
   smallCnt = (small && !fakeZero) ? smallCnt+1 : 0;
@@ -725,15 +738,35 @@ function step(r, now){
       if(now-wplat.t>=(S.weakMs??300)){ armed=true; redo=false; plat=null; devAcc=0; spikeCnt=0; wplat=null; }
     } else if(!stable) wplat=null;
   }
+  // Vågen kryper fortfarande (vanligt för lock: 7,11 → 7,16 → 7,21 → 7,25 när handen släpper)? Vänta in den riktiga vikten.
+  if(r.val>=S.minW) rec.push({t:now, v:r.val}); rec=rec.filter(p=>now-p.t<=2000);
+  const older=rec.filter(p=>now-p.t>=400 && now-p.t<=(S.settleMs??1000) && Math.abs(p.v-r.val)<0.3).map(p=>p.v);
+  if(!armed) creepSince=null;
+  let creeping = S.settleGuard===true && older.length>=3 && Math.abs(median(older)-r.val)>=0.03-1e-9;
+  if(creeping && armed){ if(creepSince==null) creepSince=now; if(now-creepSince>1500) creeping=false; }   // vänta högst 1,5 s
+  // Justera senast sparade vikt om vågen kröp vidare åt samma håll strax efter sparningen (ingen hand/topp/byte emellan)
+  let settling=false;
+  if(settle && !armed){
+    const v=r.val, d=v-settle.v;
+    if(now-settle.t>(S.settleWin??6000) || small || settle.hid>=300 || Math.abs(d)>=0.2) settle=null;
+    else if(S.settleFix!==false && stable && Math.abs(v-settle.cur)>=0.01-1e-9 && (Math.abs(d)<0.05-1e-9 || (settle.dir!==0 && Math.sign(v-settle.cur)===settle.dir && Math.abs(d)<=0.15))){
+      settling=true;
+      if(!settle.p || Math.abs(settle.p.v-v)>S.tol+1e-9) settle.p={t:now, v};
+      if(now-settle.p.t>=(S.settleHold??500)){ adjustLast(v); settle.cur=v; settle.p=null; }
+    } else if(!stable && settle) settle.p=null;
+  }
   let newWeight=false;
-  if(!armed && !redo && stable && !small && lastSaved!=null && Math.abs(r.val-lastSaved) >= 0.05-1e-9){
+  if(!armed && !redo && !settling && !(settle && settle.dir!==0 && Math.sign(r.val-settle.v)===settle.dir && Math.abs(r.val-settle.v)<=0.15) && stable && !small && lastSaved!=null && Math.abs(r.val-lastSaved) >= 0.05-1e-9){
     if(!plat || Math.abs(plat.v-r.val) > S.tol+1e-9) plat={t:now, v:r.val};
     newWeight=true;
     if(now-plat.t >= (S.platMs??400)){ armed=true; plat=null; }
   } else if(!stable) plat=null;
   let saved=null;
-  if(stable && !small && armed && S.auto){ saved=r.val; armed=false; }
-  const status = small ? ['Lägg på nästa',''] : redo ? ['Gör om – lyft av och lägg på igen','bad'] : newWeight ? ['Ny vikt – sparar strax…','wait'] : stable ? [armed?'Stabil':'Sparad – lyft av','stable'] : ['Väntar…','wait'];
+  if(stable && !small && armed && S.auto && !creeping){ saved=r.val; armed=false;
+    const before=rec.filter(p=>now-p.t>=400 && now-p.t<=1500 && Math.abs(p.v-r.val)<0.3).map(p=>p.v);
+    const ref=before.length? median(before) : r.val;
+    settle={t:now, v:r.val, dir: Math.abs(r.val-ref)>=0.02-1e-9 ? Math.sign(r.val-ref) : 0, hid:0, lastHid:null, p:null, cur:r.val}; }
+  const status = small ? ['Lägg på nästa',''] : redo ? ['Gör om – lyft av och lägg på igen','bad'] : newWeight ? ['Ny vikt – sparar strax…','wait'] : stable ? [armed?(creeping?'Väntar in vikten…':'Stabil'):'Sparad – lyft av','stable'] : ['Väntar…','wait'];
   return {disp: r.blank ? '–' : fmt(r.val), status, saved};
 }
 function handleReading(r, now){
@@ -890,7 +923,7 @@ $('btnLogClear').onclick=async()=>{ if(await ask('Rensa testloggen?')){ Object.a
 $('btnLog').onclick=async()=>{
   if(!LOG.frames.length && !LOG.events.length){ toast('Loggen är tom – slå på "Spela in testlogg" först'); return; }
   let cam=null; try{ const tr=stream&&stream.getVideoTracks()[0]; if(tr) cam={settings:tr.getSettings(), caps:tr.getCapabilities?tr.getCapabilities():null}; }catch(e){}
-  const out={app:'vagavlasare', version:23, started:new Date(LOG.wall).toISOString(), exported:new Date().toISOString(), meta:LOG.meta, cam,
+  const out={app:'vagavlasare', version:24, started:new Date(LOG.wall).toISOString(), exported:new Date().toISOString(), meta:LOG.meta, cam,
     video:[video.videoWidth,video.videoHeight], settings:S, data:{dosor:D.dosor, lock:D.lock},
     framesFormat:['ms','värde','rå','status','roi'], frames:LOG.frames, events:LOG.events, snaps:LOG.snaps};
   const blob=new Blob([JSON.stringify(out)],{type:'application/json'});
