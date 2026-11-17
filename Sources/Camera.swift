@@ -10,7 +10,7 @@ final class Camera: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     var onCaps: ((String) -> Void)?
     var onInfo: ((String) -> Void)?
 
-    private let session = AVCaptureSession()
+    let session = AVCaptureSession()
     private let output = AVCaptureVideoDataOutput()
     private var device: AVCaptureDevice?
     private let sessionQueue = DispatchQueue(label: "vagavlasare.camera.session")
@@ -21,7 +21,7 @@ final class Camera: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     private let lock = NSLock()
     private var waiting = false
     private var lastSent: CFAbsoluteTime = 0
-    private let maxFps: Double = 20
+    private let maxFps: Double = 25
     private let maxSide: CGFloat = 1280
 
     // MARK: Start och stopp

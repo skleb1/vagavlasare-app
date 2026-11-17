@@ -1,5 +1,6 @@
 import UIKit
 import WebKit
+import AVFoundation
 
 /// Visar vågläsarens webbsida (Resources/index.html) och kopplar den till iPhone-kameran.
 /// Webbsidan sköter avläsning, sparning och tabell – exakt samma kod som webbversionen.
@@ -7,6 +8,8 @@ import WebKit
 final class ViewController: UIViewController, WKScriptMessageHandler {
     private var webView: WKWebView!
     private let camera = Camera()
+    private let previewView = UIView()
+    private var previewLayer: AVCaptureVideoPreviewLayer!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -25,10 +28,20 @@ final class ViewController: UIViewController, WKScriptMessageHandler {
         webView = WKWebView(frame: view.bounds, configuration: cfg)
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         webView.isOpaque = false
-        webView.backgroundColor = view.backgroundColor
-        webView.scrollView.backgroundColor = view.backgroundColor
+        webView.backgroundColor = .clear            // genomskinlig så att kamerabilden bakom syns
+        webView.scrollView.backgroundColor = .clear
         webView.scrollView.contentInsetAdjustmentBehavior = .never   // sidan sköter själv marginaler kring kameran/notchen
         if #available(iOS 16.4, *) { webView.isInspectable = true }
+        // Kamerans egen förhandsbild ligger bakom den genomskinliga webbsidan (mjuk bild, 30–60 bilder/s)
+        previewView.backgroundColor = .black
+        previewView.isUserInteractionEnabled = false
+        previewView.clipsToBounds = true
+        previewView.layer.cornerRadius = 10
+        previewView.isHidden = true
+        previewLayer = AVCaptureVideoPreviewLayer(session: camera.session)
+        previewLayer.videoGravity = .resizeAspect
+        previewView.layer.addSublayer(previewLayer)
+        view.addSubview(previewView)
         view.addSubview(webView)
         webView.load(URLRequest(url: URL(string: "app://local/index.html")!))
 
@@ -81,10 +94,31 @@ final class ViewController: UIViewController, WKScriptMessageHandler {
         case "poi":       camera.focusAndExpose(x: num(m["x"], 0.5), y: num(m["y"], 0.5))
         case "store":
             if let k = m["key"] as? String, let v = m["value"] as? String { UserDefaults.standard.set(v, forKey: Self.storePrefix + k) }
+        case "preview":   placePreview(m)
         case "copy":      UIPasteboard.general.string = (m["text"] as? String) ?? ""
         case "share":     share(name: (m["name"] as? String) ?? "fil", base64: (m["b64"] as? String) ?? "")
         default: break
         }
+    }
+
+    /// Lägger kamerabilden exakt där webbsidans kameraruta är (sidans koordinater = skärmpunkter)
+    private func placePreview(_ m: [String: Any]) {
+        let show = bool(m["show"])
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        if show {
+            let r = CGRect(x: num(m["x"]), y: num(m["y"]), width: num(m["w"]), height: num(m["h"]))
+            previewView.frame = r.offsetBy(dx: webView.frame.minX, dy: webView.frame.minY)
+            previewLayer.frame = previewView.bounds
+            if let c = previewLayer.connection {
+                if #available(iOS 17.0, *) {
+                    if c.isVideoRotationAngleSupported(90) { c.videoRotationAngle = 90 }
+                } else if c.isVideoOrientationSupported {
+                    c.videoOrientation = .portrait
+                }
+            }
+        }
+        previewView.isHidden = !show
+        CATransaction.commit()
     }
 
     private func num(_ v: Any?, _ fallback: Double = 0) -> Double {

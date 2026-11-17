@@ -63,7 +63,7 @@ details summary{cursor:pointer;font-weight:600;padding:4px 0}
 </head>
 <body>
 <main>
-<h1>⚖️ Vågläsare – lock & dosor <span class="mut" style="font-weight:400">version 22</span></h1>
+<h1>⚖️ Vågläsare – lock & dosor <span class="mut" style="font-weight:400">version 23</span></h1>
 
 <div class="card">
   <div id="camWrap">
@@ -325,10 +325,21 @@ if(NATIVE){
     img.onerror=()=>{ decoding=false; camMsg({cmd:'frameDone'}); };
     img.src='data:image/jpeg;base64,'+b64;
   };
+  // Förhandsbilden visas av iPhone själv (mjuk, 30–60 bilder/s) bakom sidan; canvasen används bara för avläsningen
+  const st=document.createElement('style');
+  st.textContent='html,body,main{background:transparent!important} #camWrap{background:transparent!important} #ncam{opacity:0} .card:has(#camWrap){background:transparent!important}';
+  document.head.appendChild(st);
   window.__nativeCaps=caps=>{ nCaps=caps; setupNativeControls(); };
   window.__nativeInfo=t=>{ toast(t); };
 }
-let stream=null, wakeLock=null;
+let stream=null, wakeLock=null, pvLast='';
+function syncPreview(){   // berätta för appen var kamerabilden ska ritas (följer med när sidan scrollas)
+  if(!NATIVE) return;
+  const r=video.getBoundingClientRect(), show=!!stream && r.height>0;
+  const k=show ? [r.left,r.top,r.width,r.height].map(v=>Math.round(v*2)/2).join(',') : 'off';
+  if(k!==pvLast){ pvLast=k; camMsg({cmd:'preview', show, x:r.left, y:r.top, w:r.width, h:r.height}); }
+}
+if(NATIVE){ window.addEventListener('scroll', syncPreview, {passive:true}); window.addEventListener('resize', syncPreview); }
 function nativeConfig(){ camMsg({cmd:'config', zoom:S.zoom??1, bias:S.nBias??0, expLock:!!S.nExpLock, focLock:!!S.nFocLock, lens:S.nLens??0.5, torch:!!S.torch, wbLock:!!S.wbLock}); }
 function setupNativeControls(){
   if(!nCaps) return;
@@ -425,7 +436,7 @@ function setupCamControls(){
   }
   if(!caps.focusDistance && !caps.torch && !(caps.whiteBalanceMode||[]).includes('manual')) $('camInfo').textContent='Den här kameran låter inte webbsidor ändra fokus, färgbalans eller ficklampa. '+$('camInfo').textContent;
 }
-function stopCam(){ octx.clearRect(0,0,ov.width,ov.height); lastDigits=[]; if(NATIVE) camMsg({cmd:'stop'}); if(stream && !stream.native){ stream.getTracks().forEach(t=>t.stop()); stream=null; } video.srcObject=null; $('btnCam').textContent='Starta kamera'; $('btnCam').classList.add('pri'); setStatus('Ingen kamera',''); try{ wakeLock&&wakeLock.release(); }catch(e){} }
+function stopCam(){ octx.clearRect(0,0,ov.width,ov.height); lastDigits=[]; if(NATIVE){ camMsg({cmd:'stop'}); camMsg({cmd:'preview', show:false}); pvLast='off'; stream=null; } if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } video.srcObject=null; $('btnCam').textContent='Starta kamera'; $('btnCam').classList.add('pri'); setStatus('Ingen kamera',''); try{ wakeLock&&wakeLock.release(); }catch(e){} }
 $('btnCam').onclick=()=> stream ? stopCam() : startCam();
 document.addEventListener('visibilitychange', async()=>{ if(document.visibilityState==='visible' && stream && 'wakeLock' in navigator){ try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} } });
 
@@ -735,7 +746,7 @@ function handleReading(r, now){
 }
 function loop(ts){
   if(!stream) return;
-  drawOverlay();
+  drawOverlay(); syncPreview();
   if(ts-lastT>readEvery){ lastT=ts;
     const t0=performance.now(); const r=readDisplay(); const dt=performance.now()-t0;
     procMs=procMs*0.8+dt*0.2; readEvery=Math.min(110, Math.max(40, procMs*2));   // lämna halva tiden åt telefonen
@@ -879,7 +890,7 @@ $('btnLogClear').onclick=async()=>{ if(await ask('Rensa testloggen?')){ Object.a
 $('btnLog').onclick=async()=>{
   if(!LOG.frames.length && !LOG.events.length){ toast('Loggen är tom – slå på "Spela in testlogg" först'); return; }
   let cam=null; try{ const tr=stream&&stream.getVideoTracks()[0]; if(tr) cam={settings:tr.getSettings(), caps:tr.getCapabilities?tr.getCapabilities():null}; }catch(e){}
-  const out={app:'vagavlasare', version:22, started:new Date(LOG.wall).toISOString(), exported:new Date().toISOString(), meta:LOG.meta, cam,
+  const out={app:'vagavlasare', version:23, started:new Date(LOG.wall).toISOString(), exported:new Date().toISOString(), meta:LOG.meta, cam,
     video:[video.videoWidth,video.videoHeight], settings:S, data:{dosor:D.dosor, lock:D.lock},
     framesFormat:['ms','värde','rå','status','roi'], frames:LOG.frames, events:LOG.events, snaps:LOG.snaps};
   const blob=new Blob([JSON.stringify(out)],{type:'application/json'});
