@@ -97,7 +97,7 @@ details summary{cursor:pointer;font-weight:600;padding:4px 0}
 <body>
 <main>
 <header class="top">
-  <div class="ttl">Vågläsare <span class="ver">v25</span></div>
+  <div class="ttl">Vågläsare <span class="ver">v26</span></div>
   <div class="mut" id="expInfo"></div>
 </header>
 <div id="note"></div>
@@ -207,6 +207,7 @@ details summary{cursor:pointer;font-weight:600;padding:4px 0}
   <div class="lbl">Avläsning</div>
   <div class="card">
     <label class="switch"><input type="checkbox" id="auto" checked> Spara automatiskt när vikten är stabil</label>
+    <label class="switch"><input type="checkbox" id="camSwap"> Se byten med kameran (även när vikten blir exakt densamma)</label>
     <div class="set" style="margin-top:8px">
       <div><label>Stabil i (sekunder)</label><input id="sStable" type="number" min="0.3" max="5" step="0.1"></div>
       <div><label>Max skillnad för "stabil" (g)</label><input id="sTol" type="number" min="0" step="0.01"></div>
@@ -267,7 +268,7 @@ details summary{cursor:pointer;font-weight:600;padding:4px 0}
   </div>
 
   <button id="btnClear" class="wide danger" style="margin:16px 0 8px">Ny vecka (rensa allt)</button>
-  <div class="mut" style="text-align:center;margin-bottom:8px">Vågläsare version 25</div>
+  <div class="mut" style="text-align:center;margin-bottom:8px">Vågläsare version 26</div>
 </section>
 </main>
 
@@ -293,7 +294,7 @@ const store = {
 };
 
 // ---------- Inställningar & data ----------
-const S = Object.assign({swapMs:150,platMs:400,chanMode:'luma',perDigit:false,kMode:'rel',edgeFrac:0.05,autoFind:true,roi:null,decimals:2,slant:4,k:0.12,stableSec:1.0,minW:1,target:170,tol:0.02,invert:false,auto:true,dev:0.25,zoom:null,focusMan:false,focusDist:null,wbLock:false,torch:false,copySep:'.', nSaveBeep:true, nVib:true, nDev:true, nDup:true, nLost:true, nDone:true, rWeek:false, rDay:6, rTime:'08:00', rResign:true, rExcel:false}, store.get('vag_settings7', {}));
+const S = Object.assign({swapMs:150,platMs:400,chanMode:'luma',perDigit:false,kMode:'rel',edgeFrac:0.05,autoFind:true,roi:null,decimals:2,slant:4,k:0.12,stableSec:1.0,minW:1,target:170,tol:0.02,invert:false,auto:true,dev:0.25,zoom:null,focusMan:false,focusDist:null,wbLock:false,torch:false,copySep:'.', nSaveBeep:true, nVib:true, nDev:true, nDup:true, nLost:true, nDone:true, rWeek:false, rDay:6, rTime:'08:00', rResign:true, rExcel:false, camSwap:true}, store.get('vag_settings7', {}));
 const newData = () => ({dosor:[], lock:[], mode:'dosor', hist:[]});
 let D = Object.assign(newData(), store.get('vag_data', {}));
 const saveS = () => store.set('vag_settings7', S);
@@ -396,7 +397,7 @@ function record(v, force, src){
     logEvent('avvisad', kind, v, med); logSnap('fail',{raw:'avvisad', val:v});
     return false;
   }
-  D[kind].push(v); D.hist.push(kind); lastSaved=v; pend=false; ramp=[]; devAcc=0; lastDevT=null; spikeCnt=0; wplat=null; hidLog=[], pend2=false;
+  D[kind].push(v); D.hist.push(kind); lastSaved=v; panRef=null; panRefWant=true; panBurst=0; pend=false; ramp=[]; devAcc=0; lastDevT=null; spikeCnt=0; wplat=null; hidLog=[], pend2=false;
   logEvent('sparad', kind, D[kind].length, v, src||'auto'); logSnap('save', {kind, nr:D[kind].length, val:v, src:src||'auto'});
   const nr=D[kind].length, prev=D[kind][nr-2];
   D.changed=Date.now();
@@ -488,7 +489,7 @@ function bindSet(){
   $('sInv').checked=S.invert; $('sInv').onchange=()=>{ S.invert=$('sInv').checked; saveS(); };
   $('autoFind').checked=S.autoFind; $('autoFind').onchange=()=>{ S.autoFind=$('autoFind').checked; saveS(); };
   $('auto').checked=S.auto; $('auto').onchange=()=>{ S.auto=$('auto').checked; saveS(); };
-  for(const id of ['nSaveBeep','nVib','nDev','nDup','nLost','nDone']){ $(id).checked=!!S[id]; $(id).onchange=()=>{ S[id]=$(id).checked; saveS(); }; }
+  for(const id of ['nSaveBeep','nVib','nDev','nDup','nLost','nDone','camSwap']){ $(id).checked=!!S[id]; $(id).onchange=()=>{ S[id]=$(id).checked; saveS(); }; }
   $('rDay').value=String(S.rDay); $('rTime').value=S.rTime;
   for(const id of ['rWeek','rResign','rExcel']){ $(id).checked=!!S[id]; $(id).onchange=()=>{ S[id]=$(id).checked; saveS(); remindSync(true); }; }
   $('rDay').onchange=()=>{ S.rDay=+$('rDay').value; saveS(); remindSync(); }; $('rTime').onchange=()=>{ S.rTime=$('rTime').value||'08:00'; saveS(); remindSync(); };
@@ -862,6 +863,34 @@ function decode(chars){
 // Oläsbara bilder hoppas över (nollställer inget). Vikten räknas som stabil när alla
 // avläsningar senaste sekunden ligger inom ±tolerans. Under minsta vikt => redo för nästa.
 let readEvery=110, procMs=20, smallSince=null;
+// ---------- Kameran ser vågskålen ----------
+// Liten gråskalebild av området ovanför displayen (där locket/dosan ligger). Ett nytt lock hamnar aldrig exakt likadant,
+// så efter att en hand varit i bild och allt är stilla igen syns ett byte även när vikten är exakt densamma.
+const PAN={N:48, QUIET:4, BURST:10, SWAP:7};
+const pcv=document.createElement('canvas'); pcv.width=PAN.N; pcv.height=PAN.N; const pctx=pcv.getContext('2d',{willReadFrequently:true});
+let panPrev=null, panNow=null, panRef=null, panRefWant=false, panRoiKey='', panMot=0, panDiff=0, panBurst=0, panQuietSince=null;
+const mad=(a,b)=>{ let x=0; for(let i=0;i<a.length;i++) x+=Math.abs(a[i]-b[i]); return x/a.length; };
+function panSample(){
+  const vw=video.videoWidth, vh=video.videoHeight; if(!vw||!vh) return null;
+  const r=S.roi||autoRoi, bottom=r ? Math.min(0.95,Math.max(0.15, r.y-0.01)) : 0.5, top=Math.max(0, bottom-0.6);
+  const moved = !panRoiKey || !r ? (!!r !== !!panRoiKey) : (Math.abs(r.x-panRoiKey.x)>0.03 || Math.abs(r.y-panRoiKey.y)>0.03);
+  if(moved){ panRoiKey=r?{x:r.x,y:r.y}:''; panRef=null; panRefWant=true; panPrev=null; }   // displayen flyttad/zoomad: börja om
+  try{ pctx.drawImage(video, 0, top*vh, vw, (bottom-top)*vh, 0, 0, PAN.N, PAN.N); }catch(e){ return null; }
+  const d=pctx.getImageData(0,0,PAN.N,PAN.N).data, g=new Float32Array(PAN.N*PAN.N);
+  for(let i=0;i<g.length;i++) g[i]=d[i*4]*0.3+d[i*4+1]*0.59+d[i*4+2]*0.11;
+  return g;
+}
+function panStep(now){
+  const g=panSample(); if(!g) return;
+  panMot = panPrev ? mad(g,panPrev) : 0; panPrev=g; panNow=g;
+  if(panMot<PAN.QUIET){ if(panQuietSince==null) panQuietSince=now; } else panQuietSince=null;
+  const quiet = panQuietSince!=null && now-panQuietSince>=300;
+  if(panRefWant && quiet){ panRef=g; panRefWant=false; panBurst=0; logEvent('skålbild'); logSnap('pan',{}); }   // så här ser skålen ut med det sparade locket
+  if(panRef && panMot>=PAN.BURST) panBurst=Math.max(panBurst, panMot);
+  panDiff = panRef ? mad(g,panRef) : 0;
+}
+const panSwap = now => S.camSwap!==false && panRef && panBurst>=PAN.BURST && panQuietSince!=null && now-panQuietSince>=300 && panDiff>=PAN.SWAP;
+
 let hist=[], armed=true, cur={val:null}, lastT=0, lastOk=0, smallCnt=0, redo=false, lastSaved=null, refStable=null, plat=null, hidStart=null, pend=false, ramp=[], devAcc=0, lastDevT=null, spikeCnt=0, wplat=null, spikeT=-1e9, rec=[], settle=null, creepSince=null, hidLog=[], pend2=false;
 function setStatus(t,c){ $('status').textContent=t; $('sbar').className='sbar '+(c||''); $('sIcon').textContent = c==='stable' ? '✓' : c==='wait' ? '…' : c==='bad' ? '!' : '•'; }
 function step(r, now){
@@ -937,13 +966,14 @@ function step(r, now){
   let settling=false;
   if(settle && !armed){
     const v=r.val, d=v-settle.v;
-    if(now-settle.t>(S.settleWin??6000) || small || settle.hid>=300 || Math.abs(d)>=0.2) settle=null;
+    if(now-settle.t>(S.settleWin??6000) || small || settle.hid>=300 || Math.abs(d)>=0.2 || (panRef && panBurst>=PAN.BURST && panDiff>=PAN.SWAP)) settle=null;
     else if(S.settleFix!==false && stable && Math.abs(v-settle.cur)>=0.01-1e-9 && (Math.abs(d)<0.05-1e-9 || (settle.dir!==0 && Math.sign(v-settle.cur)===settle.dir && Math.abs(d)<=0.15))){
       settling=true;
       if(!settle.p || Math.abs(settle.p.v-v)>S.tol+1e-9) settle.p={t:now, v};
       if(now-settle.p.t>=(S.settleHold??500)){ adjustLast(v); settle.cur=v; settle.p=null; }
     } else if(!stable && settle) settle.p=null;
   }
+  if(!armed && !redo && stable && !small && lastSaved!=null && panSwap(now)){ armed=true; plat=null; devAcc=0; settle=null; logEvent('kamerabyte', +panDiff.toFixed(1), +panBurst.toFixed(1)); logSnap('pan',{swap:true}); }
   let newWeight=false;
   if(!armed && !redo && !settling && !(settle && settle.dir!==0 && Math.sign(r.val-settle.v)===settle.dir && Math.abs(r.val-settle.v)<=0.15) && stable && !small && lastSaved!=null && Math.abs(r.val-lastSaved) >= 0.05-1e-9){
     if(!plat || Math.abs(plat.v-r.val) > S.tol+1e-9) plat={t:now, v:r.val};
@@ -973,7 +1003,7 @@ function loop(ts){
   if(!stream) return;
   drawOverlay(); syncPreview();
   if(ts-lastT>readEvery){ lastT=ts;
-    const t0=performance.now(); const r=readDisplay(); const dt=performance.now()-t0;
+    const t0=performance.now(); panStep(t0); const r=readDisplay(); const dt=performance.now()-t0;
     procMs=procMs*0.8+dt*0.2; readEvery=Math.min(110, Math.max(40, procMs*2));   // lämna halva tiden åt telefonen
     handleReading(r, performance.now());
   }
@@ -1082,13 +1112,13 @@ $('btnCopy').onclick=()=>{
   copyText(lines.join('\n'), `Kopierade ${n} rader (dosor och lock)`); };
 
 // ---------- Testlogg ----------
-const LOG={on:false, start:0, wall:0, frames:[], events:[], snaps:[], cnt:{fail:0,save:0,ok:0,full:0}, last:{fail:-1e9,ok:-1e9,full:-1e9}, meta:{}};
-const SNAPMAX={fail:300, save:400, ok:120, full:40};
+const LOG={on:false, start:0, wall:0, frames:[], events:[], snaps:[], cnt:{fail:0,save:0,ok:0,full:0,pan:0}, last:{fail:-1e9,ok:-1e9,full:-1e9}, meta:{}};
+const SNAPMAX={fail:300, save:400, ok:120, full:40, pan:500};
 function logT(){ return Math.round(performance.now()-LOG.start); }
 function logEvent(type, ...a){ if(LOG.on) LOG.events.push([logT(), type, ...a]); }
 function logFrame(r, res, now){
   if(LOG.frames.length<40000) LOG.frames.push([Math.round(now-LOG.start), r ? (r.ok ? r.val : '?') : '-', r ? r.raw : '', res ? res.status[0] : '(hoppar)',
-    S.roi ? [S.roi.x,S.roi.y,S.roi.w,S.roi.h].map(v=>+v.toFixed(4)) : null]);
+    S.roi ? [S.roi.x,S.roi.y,S.roi.w,S.roi.h].map(v=>+v.toFixed(4)) : null, +panMot.toFixed(1), +panDiff.toFixed(1), +panBurst.toFixed(1)]);
   if(r && !r.ok && now-LOG.last.fail>1500){ LOG.last.fail=now; logSnap('fail',{raw:r.raw}); }
   if(r && r.ok && !r.blank && now-LOG.last.ok>10000){ LOG.last.ok=now; logSnap('ok',{raw:r.raw,val:r.val}); }
   if(now-LOG.last.full>30000){ LOG.last.full=now; logSnap('full',{}); }
@@ -1099,7 +1129,10 @@ function logSnap(type, info){
     let img;
     if(type==='full'){ const c=document.createElement('canvas'), vw=video.videoWidth, vh=video.videoHeight; if(!vw) return;
       c.width=480; c.height=Math.round(480*vh/vw); c.getContext('2d').drawImage(video,0,0,c.width,c.height); img=c.toDataURL('image/jpeg',0.7); }
-    else { if(!work.width) return; img=work.toDataURL('image/jpeg',0.85); }   // utsnittet av displayen som avlästes
+    else if(type==='pan'){ const c=document.createElement('canvas'), vw=video.videoWidth, vh=video.videoHeight; if(!vw) return;
+      const r=S.roi||autoRoi, bottom=r?Math.min(0.95,Math.max(0.15,r.y-0.01)):0.5, top=Math.max(0,bottom-0.6);
+      c.width=160; c.height=160; c.getContext('2d').drawImage(video,0,top*vh,vw,(bottom-top)*vh,0,0,160,160); img=c.toDataURL('image/jpeg',0.7); info=Object.assign({mot:+panMot.toFixed(1),diff:+panDiff.toFixed(1),burst:+panBurst.toFixed(1)},info); }
+    else { if(!work.width) return; img=work.toDataURL('image/jpeg',0.85); }   // utsnittet av displayen som avlästes   // utsnittet av displayen som avlästes
     LOG.cnt[type]++; LOG.snaps.push(Object.assign({t:logT(), type, roi:S.roi?{...S.roi}:null, img}, info));
   }catch(e){}
 }
@@ -1112,13 +1145,13 @@ $('logOn').onchange=()=>{
   else { logEvent('stopp'); LOG.on=false; LOG.dur=performance.now()-LOG.start; }
   logInfo();
 };
-$('btnLogClear').onclick=async()=>{ if(await ask('Rensa testloggen?')){ Object.assign(LOG,{frames:[],events:[],snaps:[],cnt:{fail:0,save:0,ok:0,full:0},last:{fail:-1e9,ok:-1e9,full:-1e9}}); if(LOG.on){ LOG.start=performance.now(); LOG.wall=Date.now(); } logInfo(); } };
+$('btnLogClear').onclick=async()=>{ if(await ask('Rensa testloggen?')){ Object.assign(LOG,{frames:[],events:[],snaps:[],cnt:{fail:0,save:0,ok:0,full:0,pan:0},last:{fail:-1e9,ok:-1e9,full:-1e9}}); if(LOG.on){ LOG.start=performance.now(); LOG.wall=Date.now(); } logInfo(); } };
 $('btnLog').onclick=async()=>{
   if(!LOG.frames.length && !LOG.events.length){ toast('Loggen är tom – slå på "Spela in testlogg" först'); return; }
   let cam=null; try{ const tr=stream&&stream.getVideoTracks()[0]; if(tr) cam={settings:tr.getSettings(), caps:tr.getCapabilities?tr.getCapabilities():null}; }catch(e){}
-  const out={app:'vagavlasare', version:25, started:new Date(LOG.wall).toISOString(), exported:new Date().toISOString(), meta:LOG.meta, cam,
+  const out={app:'vagavlasare', version:26, started:new Date(LOG.wall).toISOString(), exported:new Date().toISOString(), meta:LOG.meta, cam,
     video:[video.videoWidth,video.videoHeight], settings:S, data:{dosor:D.dosor, lock:D.lock},
-    framesFormat:['ms','värde','rå','status','roi'], frames:LOG.frames, events:LOG.events, snaps:LOG.snaps};
+    framesFormat:['ms','värde','rå','status','roi','skålrörelse','skålskillnad','skåltopp'], frames:LOG.frames, events:LOG.events, snaps:LOG.snaps};
   const blob=new Blob([JSON.stringify(out)],{type:'application/json'});
   const d=new Date(), fname=`vaglogg-${d.toISOString().slice(0,10)}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}.json`;
   const file=new File([blob], fname, {type:'application/json'});
